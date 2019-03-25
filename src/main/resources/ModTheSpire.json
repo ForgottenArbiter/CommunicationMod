@@ -1,0 +1,9 @@
+{
+  "modid": "Communication_Mod_0_1",
+  "name": "Communication Mod",
+  "author_list": ["Arbiter"],
+  "description": "Used to help external programs communicate with Slay the Spire",
+  "version": "0.1",
+  "sts_version": "01-23-2019",
+  "mts_version": "3.9.2"
+}
