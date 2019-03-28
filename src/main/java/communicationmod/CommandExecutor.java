@@ -232,67 +232,6 @@ public class CommandExecutor {
         }
         return choice_index;
     }
-/*
-    private static void executeCardRewardChooseCommand(String[] tokens) throws InvalidCommandException {
-        ArrayList<String> validChoices = ChoiceScreenUtils.getCardRewardScreenChoices();
-        int choice_index = getValidChoiceIndex(tokens, validChoices);
-        ChoiceScreenUtils.makeCardRewardChoice(validChoices, choice_index);
-    }
-
-    private static void executeCombatRewardChooseCommand(String[] tokens) throws InvalidCommandException {
-        ArrayList<String> validChoices = ChoiceScreenUtils.getCombatRewardScreenChoices();
-        int choice_index = getValidChoiceIndex(tokens, validChoices);
-        ChoiceScreenUtils.makeCombatRewardChoice(validChoices, choice_index);
-    }
-
-    private static void executeMapChooseCommand(String[] tokens) throws InvalidCommandException {
-        ArrayList<String> validChoices = ChoiceScreenUtils.getMapScreenChoices();
-        int choice_index = getValidChoiceIndex(tokens, validChoices);
-        ChoiceScreenUtils.makeMapChoice(choice_index);
-    }
-
-    private static void executeEventChooseCommand(String[] tokens) throws InvalidCommandException {
-        ArrayList<String> validChoices = ChoiceScreenUtils.getEventScreenChoices();
-        int choice_index = getValidChoiceIndex(tokens, validChoices);
-        ChoiceScreenUtils.makeEventChoice(choice_index);
-    }
-
-    private static void executeBossRewardChooseCommand(String[] tokens) throws InvalidCommandException {
-        ArrayList<String> validChoices = ChoiceScreenUtils.getBossRewardScreenChoices();
-        int choice_index = getValidChoiceIndex(tokens, validChoices);
-        ChoiceScreenUtils.makeBossRewardChoice(choice_index);
-    }
-
-    private static void executeChestChooseCommand(String[] tokens) throws InvalidCommandException {
-        ArrayList<String> validChoices = ChoiceScreenUtils.getChestRoomChoices();
-        int choice_index = getValidChoiceIndex(tokens, validChoices);
-        ChoiceScreenUtils.makeChestRoomChoice(validChoices, choice_index);
-    }
-
-    private static void executeShopRoomChooseCommand(String[] tokens) throws InvalidCommandException {
-        ArrayList<String> validChoices = ChoiceScreenUtils.getShopRoomChoices();
-        int choice_index = getValidChoiceIndex(tokens, validChoices);
-        ChoiceScreenUtils.makeShopRoomChoice(validChoices, choice_index);
-    }
-
-    private static void executeShopScreenChooseCommand(String[] tokens) throws InvalidCommandException {
-        ArrayList<String> validChoices = ChoiceScreenUtils.getShopScreenChoices();
-        int choice_index = getValidChoiceIndex(tokens, validChoices);
-        ChoiceScreenUtils.makeShopScreenChoice(validChoices, choice_index);
-    }
-
-    private static void executeGridScreenChooseCommand(String[] tokens) throws InvalidCommandException {
-        ArrayList<String> validChoices = ChoiceScreenUtils.getGridScreenChoices();
-        int choice_index = getValidChoiceIndex(tokens, validChoices);
-        ChoiceScreenUtils.makeGridScreenChoice(validChoices, choice_index);
-    }
-
-    private static void executeRestRoomChooseCommand(String[] tokens) throws InvalidCommandException {
-        ArrayList<String> validChocies = ChoiceScreenUtils.getRestRoomChoices();
-        int choice_index = getValidChoiceIndex(tokens, validChocies);
-        ChoiceScreenUtils.makeRestRoomChoice(validChocies, choice_index);
-    }
-    */
 
     private static String merge_arguments(String[] tokens) {
         StringBuilder builder = new StringBuilder();

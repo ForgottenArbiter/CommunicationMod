@@ -23,6 +23,8 @@ public class InvalidCommandException extends Exception {
         super();
         this.message = message;
         this.format = InvalidCommandFormat.SIMPLE;
+        this.command = new String[1];
+        this.command[0] = "";
     }
 
     public String getMessage() {

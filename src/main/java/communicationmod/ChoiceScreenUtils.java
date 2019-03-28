@@ -22,6 +22,7 @@ import com.megacrit.cardcrawl.rewards.RewardItem;
 import com.megacrit.cardcrawl.rooms.*;
 import com.megacrit.cardcrawl.screens.CardRewardScreen;
 import com.megacrit.cardcrawl.screens.select.GridCardSelectScreen;
+import com.megacrit.cardcrawl.screens.select.HandCardSelectScreen;
 import com.megacrit.cardcrawl.shop.Merchant;
 import com.megacrit.cardcrawl.shop.ShopScreen;
 import com.megacrit.cardcrawl.shop.StorePotion;
@@ -32,8 +33,9 @@ import communicationmod.patches.GridCardSelectScreenPatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -53,6 +55,7 @@ public class ChoiceScreenUtils {
         BOSS_REWARD,
         SHOP_SCREEN,
         GRID,
+        HAND_SELECT,
         INVALID
     }
 
@@ -119,6 +122,8 @@ public class ChoiceScreenUtils {
                 return ChoiceType.SHOP_SCREEN;
             case GRID:
                 return ChoiceType.GRID;
+            case HAND_SELECT:
+                return ChoiceType.HAND_SELECT;
             default:
                 return ChoiceType.INVALID;
         }
@@ -147,6 +152,8 @@ public class ChoiceScreenUtils {
                 return getShopScreenChoices();
             case GRID:
                 return getGridScreenChoices();
+            case HAND_SELECT:
+                return getHandSelectScreenChoices();
             default:
                 return new ArrayList<>();
         }
@@ -185,9 +192,52 @@ public class ChoiceScreenUtils {
             case GRID:
                 makeGridScreenChoice(choice_index);
                 return;
+            case HAND_SELECT:
+                makeHandSelectScreenChoice(choice_index);
+                return;
             default:
                 logger.info("Unimplemented choice.");
         }
+    }
+
+    public static ArrayList<String> getHandSelectScreenChoices() {
+        ArrayList<String> choices = new ArrayList<>();
+        HandCardSelectScreen screen = AbstractDungeon.handCardSelectScreen;
+        if(isHandSelectConfirmButtonEnabled()) {
+            choices.add("confirm");
+        }
+        for(AbstractCard card : AbstractDungeon.player.hand.group) {
+            choices.add(card.name.toLowerCase());
+        }
+        return choices;
+    }
+
+    public static void makeHandSelectScreenChoice(int choice) {
+        HandCardSelectScreen screen = AbstractDungeon.handCardSelectScreen;
+        if(isHandSelectConfirmButtonEnabled()) {
+            if(choice == 0) {
+                screen.button.hb.clicked = true;
+            } else {
+                choice -= 1;
+            }
+        }
+        screen.hoveredCard = AbstractDungeon.player.hand.group.get(choice);
+        screen.hoveredCard.setAngle(0.0f, false); // This might not be necessary
+        try {
+            Method hotkeyCheck = HandCardSelectScreen.class.getDeclaredMethod("selectHoveredCard");
+            hotkeyCheck.setAccessible(true);
+            hotkeyCheck.invoke(screen);
+        } catch(NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            e.printStackTrace();
+            throw new RuntimeException("selectHoveredCard method somehow can't be called.");
+        }
+    }
+
+    private static boolean isHandSelectConfirmButtonEnabled() {
+        CardSelectConfirmButton button = AbstractDungeon.handCardSelectScreen.button;
+        boolean isHidden = (boolean)ReflectionHacks.getPrivate(button, CardSelectConfirmButton.class, "isHidden");
+        boolean isDisabled = button.isDisabled;
+        return !(isHidden || isDisabled);
     }
 
     public static ArrayList<String> getGridScreenChoices() {
@@ -345,6 +395,7 @@ public class ChoiceScreenUtils {
         return choices;
     }
 
+    @SuppressWarnings("unchecked")
     private static ArrayList<Object> getAvailableShopItems() {
         ArrayList<Object> choices = new ArrayList<>();
         ShopScreen screen = AbstractDungeon.shopScreen;
@@ -405,17 +456,17 @@ public class ChoiceScreenUtils {
         }
     }
 
-    public static void clickProceedButton() {
+    private static void clickProceedButton() {
         AbstractDungeon.overlayMenu.proceedButton.show();
         Hitbox hb = (Hitbox) ReflectionHacks.getPrivate(AbstractDungeon.overlayMenu.proceedButton, ProceedButton.class, "hb");
         hb.clicked = true;
     }
 
-    public static void clickCancelButton() {
+    private static void clickCancelButton() {
         AbstractDungeon.overlayMenu.cancelButton.hb.clicked = true;
     }
 
-    public static void setCursorPosition(float x, float y) {
+    private static void setCursorPosition(float x, float y) {
         Gdx.input.setCursorPosition((int)x, (int)y);
         InputHelper.updateFirst();
     }
@@ -486,7 +537,7 @@ public class ChoiceScreenUtils {
         AbstractDungeon.dungeonMapScreen.clicked = true;
     }
 
-    public static String getOptionName(String input) {
+    private static String getOptionName(String input) {
         String unformatted = input.replaceAll("#.|NL", "");
         Pattern regex = Pattern.compile("\\[(.*?)\\]");
         Matcher matcher = regex.matcher(unformatted);
@@ -590,6 +641,7 @@ public class ChoiceScreenUtils {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static ArrayList<AbstractCampfireOption> getValidRestRoomButtons() {
         ArrayList<AbstractCampfireOption> choiceList = new ArrayList<>();
         RestRoom room = (RestRoom) AbstractDungeon.getCurrRoom();

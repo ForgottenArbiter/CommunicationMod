@@ -46,6 +46,9 @@ public class GameStateConverter {
         blocked = true;
     }
 
+    /**
+     * Removes the block instantiated by blockStateChanged()
+     */
     public static void resumeStateUpdate() {
         blocked = false;
     }
@@ -85,7 +88,8 @@ public class GameStateConverter {
         if((AbstractDungeon.getCurrRoom() instanceof EventRoom || AbstractDungeon.getCurrRoom() instanceof NeowRoom) && AbstractDungeon.getCurrRoom().event.waitTimer != 0.0F) {
             return false;
         }
-        // The state has always changed in some way when one of these variables is different. However, the state may not be finished changing.
+        // The state has always changed in some way when one of these variables is different.
+        // However, the state may not be finished changing, so we need to do some additional checks.
         if(newScreen != previousScreen || newScreenUp != previousScreenUp || newPhase != previousPhase) {
             if(inCombat) {
                 // In combat, newScreenUp being true indicates an action that requires our immediate attention.
@@ -119,6 +123,11 @@ public class GameStateConverter {
                 AbstractDungeon.actionManager.actions.isEmpty() &&
                 AbstractDungeon.actionManager.cardQueue.isEmpty()) {
 
+            return true;
+        }
+        // Sometimes, we need to register an external change in combat while an action is resolving which brings
+        // the screen up. Because the screen did not change, this is not covered by other cases.
+        if (externalChange && inCombat && newScreenUp) {
             return true;
         }
         return false;
