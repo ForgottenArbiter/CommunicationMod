@@ -19,6 +19,7 @@ import com.megacrit.cardcrawl.map.MapRoomNode;
 import com.megacrit.cardcrawl.neow.NeowRoom;
 import com.megacrit.cardcrawl.relics.AbstractRelic;
 import com.megacrit.cardcrawl.rewards.RewardItem;
+import com.megacrit.cardcrawl.rewards.chests.AbstractChest;
 import com.megacrit.cardcrawl.rooms.*;
 import com.megacrit.cardcrawl.screens.CardRewardScreen;
 import com.megacrit.cardcrawl.screens.select.GridCardSelectScreen;
@@ -57,41 +58,6 @@ public class ChoiceScreenUtils {
         GRID,
         HAND_SELECT,
         INVALID
-    }
-
-    public static ArrayList<String> getCardRewardScreenChoices() {
-        SkipCardButton skipButton = (SkipCardButton) ReflectionHacks.getPrivate(AbstractDungeon.cardRewardScreen, CardRewardScreen.class, "skipButton");
-        SingingBowlButton bowlButton = (SingingBowlButton) ReflectionHacks.getPrivate(AbstractDungeon.cardRewardScreen, CardRewardScreen.class, "bowlButton");
-        boolean skipAvailable = !(boolean) ReflectionHacks.getPrivate(skipButton, SkipCardButton.class, "isHidden");
-        boolean bowlAvailable = !(boolean) ReflectionHacks.getPrivate(bowlButton, SingingBowlButton.class, "isHidden");
-        ArrayList<String> choices = new ArrayList<>();
-        for(AbstractCard card : AbstractDungeon.cardRewardScreen.rewardGroup) {
-            choices.add(card.name.toLowerCase());
-        }
-        if(skipAvailable) {
-            choices.add("skip");
-        }
-        if(bowlAvailable) {
-            choices.add("bowl");
-        }
-        return choices;
-    }
-
-    public static void makeCardRewardChoice(int choice) {
-        ArrayList<String> choices = getCardRewardScreenChoices();
-        if(choices.get(choice).equals("skip")) {
-            AbstractDungeon.closeCurrentScreen();
-        } else if(choices.get(choice).equals("bowl")) {
-            SingingBowlButton bowlButton = (SingingBowlButton) ReflectionHacks.getPrivate(AbstractDungeon.cardRewardScreen, CardRewardScreen.class, "bowlButton");
-            bowlButton.onClick();
-            AbstractDungeon.cardRewardScreen.closeFromBowlButton();
-            AbstractDungeon.closeCurrentScreen();
-        } else {
-            AbstractCard selectedCard = AbstractDungeon.cardRewardScreen.rewardGroup.get(choice);
-            Gdx.input.setCursorPosition((int)selectedCard.hb.cX, (int)(Settings.HEIGHT - selectedCard.hb.cY));
-            selectedCard.hb.clicked = true;
-            selectedCard.hb.hovered = true;
-        }
     }
 
     public static ChoiceType getCurrentChoiceType() {
@@ -200,12 +166,206 @@ public class ChoiceScreenUtils {
         }
     }
 
+    public static boolean isCancelButtonAvailable(ChoiceType choiceType) {
+        switch (choiceType) {
+            case EVENT:
+                return false;
+            case CHEST:
+                return false;
+            case SHOP_ROOM:
+                return false;
+            case REST:
+                return false;
+            case CARD_REWARD:
+                return isCardRewardSkipAvailable();
+            case COMBAT_REWARD:
+                return false;
+            case MAP:
+                return AbstractDungeon.dungeonMapScreen.dismissable;
+            case BOSS_REWARD:
+                return true;
+            case SHOP_SCREEN:
+                return true;
+            case GRID:
+                return isGridScreenCancelAvailable();
+            case HAND_SELECT:
+                return false;
+            default:
+                logger.info("Unimplemented choice.");
+                return false;
+        }
+    }
+
+    public static boolean isCancelButtonAvailable() {
+        return isCancelButtonAvailable(getCurrentChoiceType());
+    }
+
+    public static String getCancelButtonText(ChoiceType choiceType) {
+        switch (choiceType) {
+            case CARD_REWARD:
+                return "skip";
+            case MAP:
+                return "return";
+            case BOSS_REWARD:
+                return "skip";
+            case SHOP_SCREEN:
+                return "leave";
+            case GRID:
+                return "cancel";
+            default:
+                return "cancel";
+        }
+    }
+
+    public static String getCancelButtonText() {
+        return getCancelButtonText(getCurrentChoiceType());
+    }
+
+    private static void pressCancelButton(ChoiceType choiceType) {
+        switch (choiceType) {
+            case CARD_REWARD:
+                AbstractDungeon.closeCurrentScreen();
+                return;
+            case MAP:
+                clickCancelButton();
+                return;
+            case BOSS_REWARD:
+                AbstractDungeon.bossRelicScreen.cancelButton.hb.clicked = true;
+                return;
+            case SHOP_SCREEN:
+                clickCancelButton();
+                return;
+            case GRID:
+                clickCancelButton();
+        }
+    }
+
+    public static void pressCancelButton() {
+        pressCancelButton(getCurrentChoiceType());
+    }
+
+    public static boolean isConfirmButtonAvailable(ChoiceType choiceType) {
+        switch (choiceType) {
+            case EVENT:
+                return false;
+            case CHEST:
+                return true;
+            case SHOP_ROOM:
+                return true;
+            case REST:
+                return isRestRoomProceedAvailable();
+            case CARD_REWARD:
+                return false;
+            case COMBAT_REWARD:
+                return true;
+            case MAP:
+                return false;
+            case BOSS_REWARD:
+                return false;
+            case SHOP_SCREEN:
+                return false;
+            case GRID:
+                return isGridScreenConfirmAvailable();
+            case HAND_SELECT:
+                return isHandSelectConfirmButtonEnabled();
+            default:
+                logger.info("Unimplemented choice.");
+                return false;
+        }
+    }
+
+    public static boolean isConfirmButtonAvailable() {
+        return isConfirmButtonAvailable(getCurrentChoiceType());
+    }
+
+    public static String getConfirmButtonText(ChoiceType choiceType) {
+        switch (choiceType) {
+            case CHEST:
+                return "proceed";
+            case SHOP_ROOM:
+                return "proceed";
+            case REST:
+                return "proceed";
+            case COMBAT_REWARD:
+                return "proceed";
+            case GRID:
+                return "confirm";
+            case HAND_SELECT:
+                return "confirm";
+            default:
+                return "confirm";
+        }
+    }
+
+    public static String getConfirmButtonText() {
+        return getConfirmButtonText(getCurrentChoiceType());
+    }
+
+    public static void pressConfirmButton(ChoiceType choiceType) {
+        switch (choiceType) {
+            case CHEST:
+                clickProceedButton();
+                return;
+            case SHOP_ROOM:
+                clickProceedButton();
+                return;
+            case REST:
+                clickProceedButton();
+                return;
+            case COMBAT_REWARD:
+                clickProceedButton();
+                return;
+            case GRID:
+                clickGridScreenConfirmButton();
+                return;
+            case HAND_SELECT:
+                clickHandSelectScreenConfirmButton();
+        }
+    }
+
+    public static void pressConfirmButton() {
+        pressConfirmButton(getCurrentChoiceType());
+    }
+
+    public static ArrayList<String> getCardRewardScreenChoices() {
+        ArrayList<String> choices = new ArrayList<>();
+        for(AbstractCard card : AbstractDungeon.cardRewardScreen.rewardGroup) {
+            choices.add(card.name.toLowerCase());
+        }
+        if(isBowlAvailable()) {
+            choices.add("bowl");
+        }
+        return choices;
+    }
+
+    private static boolean isBowlAvailable() {
+        SingingBowlButton bowlButton = (SingingBowlButton) ReflectionHacks.getPrivate(AbstractDungeon.cardRewardScreen, CardRewardScreen.class, "bowlButton");
+        return !((boolean) ReflectionHacks.getPrivate(bowlButton, SingingBowlButton.class, "isHidden"));
+    }
+
+    private static boolean isCardRewardSkipAvailable() {
+        SkipCardButton skipButton = (SkipCardButton) ReflectionHacks.getPrivate(AbstractDungeon.cardRewardScreen, CardRewardScreen.class, "skipButton");
+        return !((boolean) ReflectionHacks.getPrivate(skipButton, SkipCardButton.class, "isHidden"));
+    }
+
+    public static void makeCardRewardChoice(int choice) {
+        ArrayList<String> choices = getCardRewardScreenChoices();
+        if(choices.get(choice).equals("bowl")) {
+            SingingBowlButton bowlButton = (SingingBowlButton) ReflectionHacks.getPrivate(AbstractDungeon.cardRewardScreen, CardRewardScreen.class, "bowlButton");
+            bowlButton.onClick();
+            AbstractDungeon.cardRewardScreen.closeFromBowlButton();
+            AbstractDungeon.closeCurrentScreen();
+        } else {
+            AbstractCard selectedCard = AbstractDungeon.cardRewardScreen.rewardGroup.get(choice);
+            Gdx.input.setCursorPosition((int)selectedCard.hb.cX, (int)(Settings.HEIGHT - selectedCard.hb.cY));
+            selectedCard.hb.clicked = true;
+            selectedCard.hb.hovered = true;
+        }
+    }
+
     public static ArrayList<String> getHandSelectScreenChoices() {
         ArrayList<String> choices = new ArrayList<>();
         HandCardSelectScreen screen = AbstractDungeon.handCardSelectScreen;
-        if(isHandSelectConfirmButtonEnabled()) {
-            choices.add("confirm");
-        }
         for(AbstractCard card : AbstractDungeon.player.hand.group) {
             choices.add(card.name.toLowerCase());
         }
@@ -214,13 +374,6 @@ public class ChoiceScreenUtils {
 
     public static void makeHandSelectScreenChoice(int choice) {
         HandCardSelectScreen screen = AbstractDungeon.handCardSelectScreen;
-        if(isHandSelectConfirmButtonEnabled()) {
-            if(choice == 0) {
-                screen.button.hb.clicked = true;
-            } else {
-                choice -= 1;
-            }
-        }
         screen.hoveredCard = AbstractDungeon.player.hand.group.get(choice);
         screen.hoveredCard.setAngle(0.0f, false); // This might not be necessary
         try {
@@ -233,6 +386,11 @@ public class ChoiceScreenUtils {
         }
     }
 
+    private static void clickHandSelectScreenConfirmButton() {
+        HandCardSelectScreen screen = AbstractDungeon.handCardSelectScreen;
+        screen.button.hb.clicked = true;
+    }
+
     private static boolean isHandSelectConfirmButtonEnabled() {
         CardSelectConfirmButton button = AbstractDungeon.handCardSelectScreen.button;
         boolean isHidden = (boolean)ReflectionHacks.getPrivate(button, CardSelectConfirmButton.class, "isHidden");
@@ -243,12 +401,6 @@ public class ChoiceScreenUtils {
     public static ArrayList<String> getGridScreenChoices() {
         ArrayList<String> choices = new ArrayList<>();
         GridCardSelectScreen screen = AbstractDungeon.gridSelectScreen;
-        if(isGridScreenCancelAvailable()) {
-            choices.add("skip");
-        }
-        if(isGridScreenConfirmAvailable()) {
-            choices.add("confirm");
-        }
         CardGroup cards = (CardGroup) ReflectionHacks.getPrivate(screen, GridCardSelectScreen.class, "targetGroup");
         for(AbstractCard card : cards.group) {
             choices.add(card.name.toLowerCase());
@@ -258,26 +410,18 @@ public class ChoiceScreenUtils {
 
     public static void makeGridScreenChoice (int choice) {
         GridCardSelectScreen screen = AbstractDungeon.gridSelectScreen;
-        if(isGridScreenCancelAvailable()) {
-            if(choice == 0) {
-                clickCancelButton();
-                return;
-            }
-            choice -= 1;
-        }
-        if(isGridScreenConfirmAvailable()) {
-            if(choice == 0) {
-                screen.confirmButton.hb.clicked = true;
-                if (AbstractDungeon.previousScreen == AbstractDungeon.CurrentScreen.SHOP) {
-                    GameStateConverter.blockStateUpdate(); // The rest of the associated shop purge logic will not run in this update
-                }
-                return;
-            }
-            choice -= 1;
-        }
         CardGroup cards = (CardGroup) ReflectionHacks.getPrivate(screen, GridCardSelectScreen.class, "targetGroup");
         GridCardSelectScreenPatch.hoverCard = cards.group.get(choice);
         GridCardSelectScreenPatch.replaceHoverCard = true;
+    }
+
+    private static void clickGridScreenConfirmButton() {
+        GridCardSelectScreen screen = AbstractDungeon.gridSelectScreen;
+        screen.confirmButton.hb.clicked = true;
+        if (AbstractDungeon.previousScreen == AbstractDungeon.CurrentScreen.SHOP) {
+            // The rest of the associated shop purge logic will not run in this update, so we need to block until it does.
+            GameStateConverter.blockStateUpdate();
+        }
     }
 
     private static boolean isGridScreenCancelAvailable() {
@@ -304,7 +448,6 @@ public class ChoiceScreenUtils {
 
     public static ArrayList<String> getCombatRewardScreenChoices() {
         ArrayList<String> choices = new ArrayList<>();
-        choices.add("skip");
         for(RewardItem reward : AbstractDungeon.combatRewardScreen.rewards) {
             choices.add(reward.type.name().toLowerCase());
         }
@@ -312,18 +455,12 @@ public class ChoiceScreenUtils {
     }
 
     public static void makeCombatRewardChoice(int choice) {
-        ArrayList<String> choices = getCombatRewardScreenChoices();
-        if(choices.get(choice).equals("skip")) {
-            clickProceedButton();
-        } else {
-            RewardItem reward = AbstractDungeon.combatRewardScreen.rewards.get(choice - 1);
-            reward.isDone = true;
-        }
+        RewardItem reward = AbstractDungeon.combatRewardScreen.rewards.get(choice);
+        reward.isDone = true;
     }
 
     public static ArrayList<String> getBossRewardScreenChoices() {
         ArrayList<String> choices = new ArrayList<>();
-        choices.add("skip");
         for(AbstractRelic relic : AbstractDungeon.bossRelicScreen.relics) {
             choices.add(relic.name);
         }
@@ -331,55 +468,43 @@ public class ChoiceScreenUtils {
     }
 
     public static void makeBossRewardChoice(int choice) {
-        if(choice == 0) {
-            AbstractDungeon.bossRelicScreen.cancelButton.hb.clicked = true;
-        } else {
-            AbstractRelic chosenRelic = AbstractDungeon.bossRelicScreen.relics.get(choice - 1);
-            setCursorPosition(chosenRelic.hb.cX, Settings.HEIGHT - chosenRelic.hb.cY);
-            InputHelper.justClickedLeft = true;
-        }
+        AbstractRelic chosenRelic = AbstractDungeon.bossRelicScreen.relics.get(choice);
+        setCursorPosition(chosenRelic.hb.cX, Settings.HEIGHT - chosenRelic.hb.cY);
+        InputHelper.justClickedLeft = true;
     }
 
     public static ArrayList<String> getChestRoomChoices() {
         ArrayList<String> choices = new ArrayList<>();
-        choices.add("skip");
         choices.add("open");
         return choices;
     }
 
     public static void makeChestRoomChoice (int choice) {
-        ArrayList<String> choices = getChestRoomChoices();
-        if(choices.get(choice).equals("skip")) {
-            clickProceedButton();
-        } else if (AbstractDungeon.getCurrRoom() instanceof TreasureRoomBoss) {
-            ((TreasureRoomBoss) AbstractDungeon.getCurrRoom()).chest.open(true);
+        if (AbstractDungeon.getCurrRoom() instanceof TreasureRoomBoss) {
+            AbstractChest chest = ((TreasureRoomBoss) AbstractDungeon.getCurrRoom()).chest;
+            chest.isOpen = true;
+            chest.open(false);
         } else if (AbstractDungeon.getCurrRoom() instanceof TreasureRoom) {
-            ((TreasureRoom) AbstractDungeon.getCurrRoom()).chest.open(false);
+            AbstractChest chest = ((TreasureRoom) AbstractDungeon.getCurrRoom()).chest;
+            chest.isOpen = true;
+            chest.open(false);
         }
     }
 
     public static ArrayList<String> getShopRoomChoices() {
         ArrayList<String> choices = new ArrayList<>();
-        choices.add("skip");
         choices.add("shop");
         return choices;
     }
 
     public static void makeShopRoomChoice (int choice) {
-        ArrayList<String> choices = getShopRoomChoices();
-        if(choices.get(choice).equals("skip")) {
-            clickProceedButton();
-        } else if (choices.get(choice).equals("shop")) {
-            Merchant merchant = ((ShopRoom)AbstractDungeon.getCurrRoom()).merchant;
-            setCursorPosition(merchant.hb.cX, Settings.HEIGHT - merchant.hb.cY);
-            InputHelper.justClickedLeft = true;
-        }
+        Merchant merchant = ((ShopRoom)AbstractDungeon.getCurrRoom()).merchant;
+        setCursorPosition(merchant.hb.cX, Settings.HEIGHT - merchant.hb.cY);
+        InputHelper.justClickedLeft = true;
     }
 
     public static ArrayList<String> getShopScreenChoices() {
         ArrayList<String> choices = new ArrayList<>();
-        choices.add("skip");
-        ShopScreen screen = AbstractDungeon.shopScreen;
         ArrayList<Object> shopItems = getAvailableShopItems();
         for (Object item : shopItems) {
             if (item instanceof String) {
@@ -431,11 +556,7 @@ public class ChoiceScreenUtils {
 
     public static void makeShopScreenChoice(int choice) {
         ArrayList<Object> shopItems = getAvailableShopItems();
-        if(choice == 0) {
-            clickCancelButton();
-            return;
-        }
-        Object shopItem = shopItems.get(choice - 1);
+        Object shopItem = shopItems.get(choice);
         if (shopItem instanceof String) {
             AbstractDungeon.previousScreen = AbstractDungeon.CurrentScreen.SHOP;
             AbstractDungeon.gridSelectScreen.open(
@@ -473,9 +594,6 @@ public class ChoiceScreenUtils {
 
     public static ArrayList<String> getMapScreenChoices() {
         ArrayList<String> choices = new ArrayList<>();
-        if(AbstractDungeon.dungeonMapScreen.dismissable) {
-            choices.add("return");
-        }
         MapRoomNode currMapNode = AbstractDungeon.getCurrMapNode();
         if(currMapNode.y == 14 || (AbstractDungeon.id.equals(TheEnding.ID) && currMapNode.y == 2)) {
             choices.add("boss");
@@ -483,7 +601,7 @@ public class ChoiceScreenUtils {
         }
         ArrayList<MapRoomNode> availableNodes = getMapScreenNodeChoices();
         for (MapRoomNode node: availableNodes) {
-            choices.add(String.format("{\"x\":%d, \"y\":%d, \"symbol\":\"%s\"}", node.x, node.y, node.getRoomSymbol(true)).toLowerCase());
+            choices.add(String.format("x=%d", node.x).toLowerCase());
         }
         return choices;
     }
@@ -515,13 +633,9 @@ public class ChoiceScreenUtils {
     }
 
     public static void makeMapChoice(int choice) {
-        if(choice == 0) {
-            clickCancelButton();
-            return;
-        }
         MapRoomNode currMapNode = AbstractDungeon.getCurrMapNode();
         if(currMapNode.y == 14 || (AbstractDungeon.id.equals(TheEnding.ID) && currMapNode.y == 2)) {
-            if(choice == 1) {
+            if(choice == 0) {
                 DungeonMap map = AbstractDungeon.dungeonMapScreen.map;
                 setCursorPosition(map.bossHb.cX, Settings.HEIGHT - map.bossHb.cY);
                 map.bossHb.hovered = true;
@@ -532,7 +646,7 @@ public class ChoiceScreenUtils {
             }
         }
         ArrayList<MapRoomNode> nodeChoices = getMapScreenNodeChoices();
-        MapRoomNode chosenNode = nodeChoices.get(choice - 1);
+        MapRoomNode chosenNode = nodeChoices.get(choice);
         setCursorPosition(chosenNode.hb.cX, Settings.HEIGHT - chosenNode.hb.cY);
         AbstractDungeon.dungeonMapScreen.clicked = true;
     }
@@ -555,10 +669,7 @@ public class ChoiceScreenUtils {
         boolean genericShown = (boolean) ReflectionHacks.getPrivateStatic(GenericEventDialog.class, "show");
         boolean roomShown = (boolean) ReflectionHacks.getPrivate(AbstractDungeon.getCurrRoom().event.roomEventText, RoomEventDialog.class, "show");
 
-        /*if(AbstractDungeon.getCurrRoom().event instanceof GremlinWheelGame) {
-            GremlinWheelGame event = (GremlinWheelGame)AbstractDungeon.getCurrRoom().event;
-
-        } else*/ if(genericShown && buttons1.size() > 0) {
+        if(genericShown && buttons1.size() > 0) {
             for (LargeDialogOptionButton button : buttons1) {
                 if (!button.isDisabled) {
                     choiceList.add(getOptionName(button.msg).toLowerCase());
@@ -616,10 +727,6 @@ public class ChoiceScreenUtils {
 
     public static ArrayList<String> getRestRoomChoices() {
         ArrayList<String> choiceList = new ArrayList<>();
-        if(AbstractDungeon.getCurrRoom().phase == AbstractRoom.RoomPhase.COMPLETE) {
-            choiceList.add("proceed");
-            return choiceList;
-        }
         ArrayList<AbstractCampfireOption> buttons = getValidRestRoomButtons();
         for(AbstractCampfireOption button : buttons) {
             choiceList.add(getCampfireOptionName(button));
@@ -628,17 +735,15 @@ public class ChoiceScreenUtils {
     }
 
     public static void makeRestRoomChoice(int choice_index) {
-        ArrayList<String> choices = getRestRoomChoices();
-        String choice = choices.get(choice_index);
-        if(choice.equals("proceed")) {
-            clickProceedButton();
-        } else {
-            ArrayList<AbstractCampfireOption> buttons = getValidRestRoomButtons();
-            AbstractCampfireOption button = buttons.get(choice_index);
-            RestRoom room = (RestRoom) AbstractDungeon.getCurrRoom();
-            button.useOption();
-            room.campfireUI.somethingSelected = true;
-        }
+        ArrayList<AbstractCampfireOption> buttons = getValidRestRoomButtons();
+        AbstractCampfireOption button = buttons.get(choice_index);
+        RestRoom room = (RestRoom) AbstractDungeon.getCurrRoom();
+        button.useOption();
+        room.campfireUI.somethingSelected = true;
+    }
+
+    private static boolean isRestRoomProceedAvailable() {
+        return AbstractDungeon.getCurrRoom().phase == AbstractRoom.RoomPhase.COMPLETE;
     }
 
     @SuppressWarnings("unchecked")

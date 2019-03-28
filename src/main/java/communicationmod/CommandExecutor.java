@@ -30,18 +30,29 @@ public class CommandExecutor {
         }
         String command_tail = command.substring(tokens[0].length());
         switch(tokens[0]) {
-            case ("play"):
+            case "play":
                 executePlayCommand(tokens);
                 return true;
-            case ("end"):
+            case "end":
                 executeEndCommand();
                 return true;
-            case ("choose"):
+            case "choose":
                 executeChooseCommand(tokens);
                 return true;
-            case ("potion"):
+            case "potion":
                 executePotionCommand(tokens);
                 return true;
+            case "confirm":
+            case "proceed":
+                executeConfirmCommand();
+                return true;
+            case "skip":
+            case "cancel":
+            case "return":
+            case "leave":
+                executeCancelCommand();
+                return true;
+
             default:
                 logger.info("This should never happen.");
                 throw new InvalidCommandException("Command not recognized.");
@@ -61,6 +72,12 @@ public class CommandExecutor {
         }
         if (isPotionCommandAvailable()) {
             availableCommands.add("potion");
+        }
+        if (isConfirmCommandAvailable()) {
+            availableCommands.add(ChoiceScreenUtils.getConfirmButtonText());
+        }
+        if (isCancelCommandAvailable()) {
+            availableCommands.add(ChoiceScreenUtils.getCancelButtonText());
         }
         return availableCommands;
     }
@@ -83,7 +100,7 @@ public class CommandExecutor {
 
     private static boolean isChooseCommandAvailable() {
         if(AbstractDungeon.isPlayerInDungeon()) {
-            return !isPlayCommandAvailable();
+            return !isPlayCommandAvailable() && !ChoiceScreenUtils.getCurrentChoiceList().isEmpty();
         } else {
             return false;
         }
@@ -98,6 +115,22 @@ public class CommandExecutor {
             }
         }
         return false;
+    }
+
+    private static boolean isConfirmCommandAvailable() {
+        if(AbstractDungeon.isPlayerInDungeon()) {
+            return ChoiceScreenUtils.isConfirmButtonAvailable();
+        } else {
+            return false;
+        }
+    }
+
+    private static boolean isCancelCommandAvailable() {
+        if(AbstractDungeon.isPlayerInDungeon()) {
+            return ChoiceScreenUtils.isCancelButtonAvailable();
+        } else {
+            return false;
+        }
     }
 
     private static void executePlayCommand(String[] tokens) throws InvalidCommandException {
@@ -181,7 +214,7 @@ public class CommandExecutor {
             throw new InvalidCommandException("Potion index out of bounds.");
         }
         AbstractPotion selectedPotion = AbstractDungeon.player.potions.get(potion_index);
-        if(!selectedPotion.canUse()) {
+        if(use && !selectedPotion.canUse()) {
             throw new InvalidCommandException("Selected potion cannot be used.");
         }
         int monster_index = -1;
@@ -210,6 +243,15 @@ public class CommandExecutor {
             }
         }
         AbstractDungeon.topPanel.destroyPotion(selectedPotion.slot);
+        GameStateConverter.registerStateChange();
+    }
+
+    private static void executeConfirmCommand() {
+        ChoiceScreenUtils.pressConfirmButton();
+    }
+
+    private static void executeCancelCommand() {
+        ChoiceScreenUtils.pressCancelButton();
     }
 
     private static int getValidChoiceIndex(String[] tokens, ArrayList<String> validChoices) throws InvalidCommandException {
@@ -243,6 +285,7 @@ public class CommandExecutor {
         }
         return builder.toString();
     }
+
 
 
 }
