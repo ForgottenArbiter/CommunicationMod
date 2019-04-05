@@ -25,7 +25,7 @@ public class GenericEventDialogPatch {
 
     private static class Locator extends SpireInsertLocator {
         public int[] Locate(CtBehavior ctMethodToPatch) throws CannotCompileException, PatchingException {
-            Matcher matcher = new Matcher.FieldAccessMatcher("com.megacrit.cardcrawl.events.GenericEventDialog", "selectedOption");
+            Matcher matcher = new Matcher.FieldAccessMatcher(GenericEventDialog.class, "selectedOption");
             return LineFinder.findInOrder(ctMethodToPatch, new ArrayList<Matcher>(), matcher);
         }
     }

@@ -2,6 +2,7 @@ package communicationmod.patches;
 
 import com.evacipated.cardcrawl.modthespire.lib.*;
 import com.evacipated.cardcrawl.modthespire.patcher.PatchingException;
+import com.megacrit.cardcrawl.metrics.MetricData;
 import com.megacrit.cardcrawl.vfx.campfire.CampfireSmithEffect;
 import communicationmod.GameStateConverter;
 import javassist.CannotCompileException;
@@ -24,7 +25,7 @@ public class CampfireSmithEffectPatch {
 
     private static class LocatorAfter extends SpireInsertLocator {
         public int[] Locate(CtBehavior ctMethodToPatch) throws CannotCompileException, PatchingException {
-            Matcher matcher = new Matcher.FieldAccessMatcher("com.megacrit.cardcrawl.vfx.campfire.CampfireSmithEffect", "isDone");
+            Matcher matcher = new Matcher.FieldAccessMatcher(CampfireSmithEffect.class, "isDone");
             return LineFinder.findInOrder(ctMethodToPatch, new ArrayList<Matcher>(), matcher);
         }
     }
@@ -38,7 +39,7 @@ public class CampfireSmithEffectPatch {
 
     private static class LocatorBefore extends SpireInsertLocator {
         public int[] Locate(CtBehavior ctMethodToPatch) throws CannotCompileException, PatchingException {
-            Matcher matcher = new Matcher.MethodCallMatcher("com.megacrit.cardcrawl.metrics.MetricData", "addCampfireChoiceData");
+            Matcher matcher = new Matcher.MethodCallMatcher(MetricData.class, "addCampfireChoiceData");
             return LineFinder.findInOrder(ctMethodToPatch, new ArrayList<Matcher>(), matcher);
         }
     }

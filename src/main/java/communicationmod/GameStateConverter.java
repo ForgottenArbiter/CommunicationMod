@@ -204,7 +204,7 @@ public class GameStateConverter {
 
         state.put("map", convertMapToJson());
         state.put("room_state", getRoomState());
-        state.put("screen_choices", getScreenChoices());
+        state.put("choice_list", ChoiceScreenUtils.getCurrentChoiceList());
 
         Gson gson = new Gson();
         return gson.toJson(state);
@@ -229,22 +229,6 @@ public class GameStateConverter {
                 return getCombatState();
             default:
                 return new HashMap<>();
-        }
-    }
-
-    private static ArrayList<String> getScreenChoices() {
-        if (!AbstractDungeon.isScreenUp && AbstractDungeon.getCurrRoom().phase == AbstractRoom.RoomPhase.EVENT) {
-            return ChoiceScreenUtils.getEventScreenChoices();
-        } else if (!AbstractDungeon.isScreenUp && AbstractDungeon.getCurrRoom() instanceof RestRoom) {
-            return ChoiceScreenUtils.getRestRoomChoices();
-        }
-        switch(AbstractDungeon.screen) {
-            case MAP:
-                return ChoiceScreenUtils.getMapScreenChoices();
-            case GRID:
-                return ChoiceScreenUtils.getGridScreenChoices();
-            default:
-                return new ArrayList<>();
         }
     }
 

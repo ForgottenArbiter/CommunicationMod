@@ -24,7 +24,7 @@ public class CampfireSleepEffectPatch {
 
     private static class Locator extends SpireInsertLocator {
         public int[] Locate(CtBehavior ctMethodToPatch) throws CannotCompileException, PatchingException {
-            Matcher matcher = new Matcher.FieldAccessMatcher("com.megacrit.cardcrawl.vfx.campfire.CampfireSleepEffect", "isDone");
+            Matcher matcher = new Matcher.FieldAccessMatcher(CampfireSleepEffect.class, "isDone");
             return LineFinder.findInOrder(ctMethodToPatch, new ArrayList<Matcher>(), matcher);
         }
     }

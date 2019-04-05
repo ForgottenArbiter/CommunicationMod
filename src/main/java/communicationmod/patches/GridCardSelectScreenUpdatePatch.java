@@ -3,6 +3,7 @@ package communicationmod.patches;
 import com.evacipated.cardcrawl.modthespire.lib.*;
 import com.evacipated.cardcrawl.modthespire.patcher.PatchingException;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
+import com.megacrit.cardcrawl.helpers.Hitbox;
 import com.megacrit.cardcrawl.screens.select.GridCardSelectScreen;
 import com.megacrit.cardcrawl.shop.ShopScreen;
 import communicationmod.GameStateConverter;
@@ -28,7 +29,7 @@ public class GridCardSelectScreenUpdatePatch {
 
     private static class Locator extends SpireInsertLocator {
         public int[] Locate(CtBehavior ctMethodToPatch) throws CannotCompileException, PatchingException {
-            Matcher matcher = new Matcher.FieldAccessMatcher("com.megacrit.cardcrawl.helpers.Hitbox", "clicked");
+            Matcher matcher = new Matcher.FieldAccessMatcher(Hitbox.class, "clicked");
             int[] matches = LineFinder.findAllInOrder(ctMethodToPatch, new ArrayList<Matcher>(), matcher);
             int[] selectedMatches = new int[matches.length/2];
             for(int i = 0; i < matches.length; i++) {

@@ -32,7 +32,7 @@ public class CombatRewardScreenPatch {
 
     private static class Locator extends SpireInsertLocator {
         public int[] Locate(CtBehavior ctMethodToPatch) throws CannotCompileException, PatchingException {
-            Matcher matcher = new Matcher.MethodCallMatcher("com.megacrit.cardcrawl.screens.CombatRewardScreen", "setLabel");
+            Matcher matcher = new Matcher.MethodCallMatcher(CombatRewardScreen.class, "setLabel");
             return LineFinder.findInOrder(ctMethodToPatch, new ArrayList<Matcher>(), matcher);
         }
     }
