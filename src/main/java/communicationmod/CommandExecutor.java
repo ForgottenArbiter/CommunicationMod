@@ -1,12 +1,19 @@
 package communicationmod;
 
+import com.brashmonkey.spriter.Player;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.cards.CardQueueItem;
 import com.megacrit.cardcrawl.characters.AbstractPlayer;
+import com.megacrit.cardcrawl.characters.CharacterManager;
+import com.megacrit.cardcrawl.core.CardCrawlGame;
+import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
+import com.megacrit.cardcrawl.helpers.SeedHelper;
+import com.megacrit.cardcrawl.helpers.TrialHelper;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
 import com.megacrit.cardcrawl.potions.AbstractPotion;
 import com.megacrit.cardcrawl.potions.PotionSlot;
+import com.megacrit.cardcrawl.random.Random;
 import com.megacrit.cardcrawl.relics.AbstractRelic;
 import com.megacrit.cardcrawl.relics.PeacePipe;
 import com.megacrit.cardcrawl.rooms.*;
@@ -52,6 +59,9 @@ public class CommandExecutor {
             case "leave":
                 executeCancelCommand();
                 return true;
+            case "start":
+                executeStartCommand(tokens);
+                return true;
 
             default:
                 logger.info("This should never happen.");
@@ -78,6 +88,9 @@ public class CommandExecutor {
         }
         if (isCancelCommandAvailable()) {
             availableCommands.add(ChoiceScreenUtils.getCancelButtonText());
+        }
+        if (isStartCommandAvailable()) {
+            availableCommands.add("start");
         }
         return availableCommands;
     }
@@ -131,6 +144,10 @@ public class CommandExecutor {
         } else {
             return false;
         }
+    }
+
+    public static boolean isStartCommandAvailable() {
+        return !AbstractDungeon.isPlayerInDungeon();
     }
 
     private static void executePlayCommand(String[] tokens) throws InvalidCommandException {
@@ -214,8 +231,14 @@ public class CommandExecutor {
             throw new InvalidCommandException("Potion index out of bounds.");
         }
         AbstractPotion selectedPotion = AbstractDungeon.player.potions.get(potion_index);
+        if(selectedPotion instanceof PotionSlot) {
+            throw new InvalidCommandException("No potion in the selected slot.");
+        }
         if(use && !selectedPotion.canUse()) {
             throw new InvalidCommandException("Selected potion cannot be used.");
+        }
+        if(!use && !selectedPotion.canDiscard()) {
+            throw new InvalidCommandException("Selected potion cannot be discarded.");
         }
         int monster_index = -1;
         if (use) {
@@ -252,6 +275,63 @@ public class CommandExecutor {
 
     private static void executeCancelCommand() {
         ChoiceScreenUtils.pressCancelButton();
+    }
+
+    private static void executeStartCommand(String[] tokens) throws InvalidCommandException {
+        if (tokens.length < 2) {
+            throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.MISSING_ARGUMENT);
+        }
+        int ascensionLevel = 0;
+        boolean seedSet = false;
+        long seed = 0;
+        AbstractPlayer.PlayerClass selectedClass = null;
+        for(AbstractPlayer.PlayerClass playerClass : AbstractPlayer.PlayerClass.values()) {
+            if(playerClass.name().equalsIgnoreCase(tokens[1])) {
+                selectedClass = playerClass;
+            }
+        }
+        // Better to allow people to specify the character as "silent" rather than requiring "the_silent"
+        if(tokens[1].equalsIgnoreCase("silent")) {
+            selectedClass = AbstractPlayer.PlayerClass.THE_SILENT;
+        }
+        if(tokens.length >= 3) {
+            try {
+                ascensionLevel = Integer.parseInt(tokens[2]);
+            } catch (NumberFormatException e) {
+                throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.INVALID_ARGUMENT, tokens[2]);
+            }
+            if(ascensionLevel < 0 || ascensionLevel > 20) {
+                throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.OUT_OF_BOUNDS, tokens[2]);
+            }
+        }
+        if(tokens.length >= 4) {
+            String seedString = tokens[3].toUpperCase();
+            if(!seedString.matches("^[A-Z0-9]+$")) {
+                throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.INVALID_ARGUMENT, seedString);
+            }
+            seedSet = true;
+            seed = SeedHelper.getLong(seedString);
+            boolean isTrialSeed = TrialHelper.isTrialSeed(seedString);
+            if (isTrialSeed) {
+                Settings.specialSeed = seed;
+                Settings.isTrial = true;
+                seedSet = false;
+            }
+        }
+        if(!seedSet) {
+            seed = SeedHelper.generateUnoffensiveSeed(new Random(System.nanoTime()));
+        }
+        Settings.seed = seed;
+        Settings.seedSet = seedSet;
+        AbstractDungeon.generateSeeds();
+        AbstractDungeon.ascensionLevel = ascensionLevel;
+        AbstractDungeon.isAscensionMode = ascensionLevel > 0;
+        CardCrawlGame.startOver = true;
+        CardCrawlGame.mainMenuScreen.isFadingOut = true;
+        CardCrawlGame.mainMenuScreen.fadeOutMusic();
+        CharacterManager manager = new CharacterManager();
+        manager.setChosenCharacter(selectedClass);
+        CardCrawlGame.chosenCharacter = selectedClass;
     }
 
     private static int getValidChoiceIndex(String[] tokens, ArrayList<String> validChoices) throws InvalidCommandException {
