@@ -1,24 +1,32 @@
 package communicationmod;
 
+import basemod.ReflectionHacks;
 import com.google.gson.Gson;
 import com.megacrit.cardcrawl.actions.GameActionManager;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.characters.AbstractPlayer;
 import com.megacrit.cardcrawl.core.AbstractCreature;
+import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
+import com.megacrit.cardcrawl.events.RoomEventDialog;
 import com.megacrit.cardcrawl.map.MapRoomNode;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
 import com.megacrit.cardcrawl.neow.NeowRoom;
 import com.megacrit.cardcrawl.potions.AbstractPotion;
 import com.megacrit.cardcrawl.powers.AbstractPower;
 import com.megacrit.cardcrawl.relics.AbstractRelic;
-import com.megacrit.cardcrawl.rooms.AbstractRoom;
-import com.megacrit.cardcrawl.rooms.EventRoom;
-import com.megacrit.cardcrawl.rooms.RestRoom;
+import com.megacrit.cardcrawl.rewards.RewardItem;
+import com.megacrit.cardcrawl.rooms.*;
+import com.megacrit.cardcrawl.screens.select.GridCardSelectScreen;
+import com.megacrit.cardcrawl.shop.ShopScreen;
+import com.megacrit.cardcrawl.shop.StorePotion;
+import com.megacrit.cardcrawl.shop.StoreRelic;
 import com.megacrit.cardcrawl.ui.buttons.LargeDialogOptionButton;
+import communicationmod.patches.UpdateBodyTextPatch;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.stream.Collectors;
 
 public class GameStateConverter {
 
@@ -155,8 +163,8 @@ public class GameStateConverter {
      * Sometimes present:
      * - "current_action": The action in the action manager queue, if not empty.
      * - "screen_state": State information about the current screen.
-     * - "choose_choices": If the command is available, the possible choices for the choose command.
-     * @return A JSON representation of the game state
+     * - "choice_list": If the command is available, the possible choices for the choose command.
+     * @return A JSON representation of the game state (as a String)
      */
     public static String getGameStateGson() {
         externalChange = false;
@@ -180,10 +188,13 @@ public class GameStateConverter {
         state.put("floor", AbstractDungeon.floorNum);
         state.put("act", AbstractDungeon.actNum);
         state.put("gold", AbstractDungeon.player.gold);
+        state.put("seed", Settings.seed);
+        state.put("class", AbstractDungeon.player.chosenClass.name());
+        state.put("ascension_level", AbstractDungeon.ascensionLevel);
 
         ArrayList<Object> relics = new ArrayList<>();
         for(AbstractRelic relic : AbstractDungeon.player.relics) {
-            relics.add(relic.relicId);
+            relics.add(convertRelicToJson(relic));
         }
 
         state.put("relics", relics);
@@ -204,15 +215,19 @@ public class GameStateConverter {
 
         state.put("map", convertMapToJson());
         state.put("room_state", getRoomState());
-        state.put("choice_list", ChoiceScreenUtils.getCurrentChoiceList());
+        if(CommandExecutor.isChooseCommandAvailable()) {
+            state.put("choice_list", ChoiceScreenUtils.getCurrentChoiceList());
+        }
+        if(AbstractDungeon.isScreenUp) {
+            state.put("screen_state", getScreenState());
+        }
 
         Gson gson = new Gson();
         return gson.toJson(state);
     }
 
     /**
-     * Returns just the class name (com.megacrit.cardcrawl.dungeons.AbstractDungeon -> AbstractDungeon).
-     * Probably not what this stuff is actually called, but not going to look up precise terminology.
+     * Returns just the class name ("com.megacrit.cardcrawl.dungeons.AbstractDungeon" -> "AbstractDungeon").
      * @param className Full class name
      * @return Short class name
      */
@@ -222,27 +237,185 @@ public class GameStateConverter {
     }
 
     private static HashMap<String, Object> getRoomState() {
-        switch(AbstractDungeon.getCurrRoom().phase) {
+        AbstractRoom currentRoom = AbstractDungeon.getCurrRoom();
+        switch(currentRoom.phase) {
             case EVENT:
                 return getEventState();
             case COMBAT:
                 return getCombatState();
-            default:
-                return new HashMap<>();
         }
+        HashMap<String, Object> state = new HashMap<>();
+        if(currentRoom instanceof TreasureRoom) {
+            state.put("chest_type", splitFinalClassName(((TreasureRoom)currentRoom).chest.getClass().getName()));
+            state.put("chest_open", ((TreasureRoom) currentRoom).chest.isOpen);
+        } else if(currentRoom instanceof TreasureRoomBoss) {
+            state.put("chest_open", ((TreasureRoomBoss) currentRoom).chest.isOpen);
+        } else if(currentRoom instanceof RestRoom) {
+            state.put("has_rested", currentRoom.phase == AbstractRoom.RoomPhase.COMPLETE);
+            state.put("rest_options", ChoiceScreenUtils.getRestRoomChoices());
+        }
+        return state;
+    }
+
+    private static String removeTextFormatting(String text) {
+        return text.replaceAll("#.|NL", "");
     }
 
     private static HashMap<String, Object> getEventState() {
         HashMap<String, Object> state = new HashMap<>();
         ArrayList<Object> options = new ArrayList<>();
-        for(LargeDialogOptionButton button : AbstractDungeon.getCurrRoom().event.imageEventText.optionList) {
-            HashMap<String, Object> json_button = new HashMap<>();
-            json_button.put("text", button.msg);
-            json_button.put("disabled", button.isDisabled);
-            options.add(json_button);
+        ChoiceScreenUtils.EventDialogType eventDialogType = ChoiceScreenUtils.getEventDialogType();
+        if (eventDialogType == ChoiceScreenUtils.EventDialogType.IMAGE) {
+            for (LargeDialogOptionButton button : AbstractDungeon.getCurrRoom().event.imageEventText.optionList) {
+                HashMap<String, Object> json_button = new HashMap<>();
+                json_button.put("text", removeTextFormatting(button.msg));
+                json_button.put("disabled", button.isDisabled);
+                options.add(json_button);
+            }
+            state.put("body_text", removeTextFormatting(UpdateBodyTextPatch.bodyText));
+        } else if(eventDialogType == ChoiceScreenUtils.EventDialogType.ROOM) {
+            for (LargeDialogOptionButton button : RoomEventDialog.optionList) {
+                HashMap<String, Object> json_button = new HashMap<>();
+                json_button.put("text", removeTextFormatting(button.msg));
+                json_button.put("disabled", button.isDisabled);
+                options.add(json_button);
+            }
+            state.put("body_text", removeTextFormatting(UpdateBodyTextPatch.bodyText));
+        } else {
+            for (String misc_option : ChoiceScreenUtils.getEventScreenChoices()) {
+                HashMap<String, Object> json_button = new HashMap<>();
+                json_button.put("text", misc_option);
+                json_button.put("disabled", false);
+                options.add(json_button);
+            }
+            state.put("body_text", "");
         }
-        state.put("name", splitFinalClassName(AbstractDungeon.getCurrRoom().event.getClass().getName()));
+        state.put("event_name", splitFinalClassName(AbstractDungeon.getCurrRoom().event.getClass().getName()));
         state.put("options", options);
+        return state;
+    }
+
+    private static HashMap<String, Object> getScreenState() {
+        ChoiceScreenUtils.ChoiceType screenType = ChoiceScreenUtils.getCurrentChoiceType();
+        HashMap<String, Object> state = new HashMap<>();
+        switch (screenType) {
+            case CARD_REWARD:
+                state.put("bowl_available", ChoiceScreenUtils.isBowlAvailable());
+                state.put("skip_available", ChoiceScreenUtils.isCardRewardSkipAvailable());
+                ArrayList<Object> cardRewardJson = new ArrayList<>();
+                for(AbstractCard card : AbstractDungeon.cardRewardScreen.rewardGroup) {
+                    cardRewardJson.add(convertCardToJson(card));
+                }
+                state.put("cards", cardRewardJson);
+                break;
+            case COMBAT_REWARD:
+                ArrayList<Object> rewards = new ArrayList<>();
+                for(RewardItem reward : AbstractDungeon.combatRewardScreen.rewards) {
+                    HashMap<String, Object> jsonReward = new HashMap<>();
+                    jsonReward.put("type", reward.type.name().toLowerCase());
+                    switch(reward.type) {
+                        case GOLD:
+                        case STOLEN_GOLD:
+                            jsonReward.put("amount", reward.goldAmt + reward.bonusGold);
+                            break;
+                        case RELIC:
+                            jsonReward.put("relic", convertRelicToJson(reward.relic));
+                            break;
+                        case POTION:
+                            jsonReward.put("potion", reward.potion.ID);
+                            break;
+                        case SAPPHIRE_KEY:
+                            jsonReward.put("link", convertRelicToJson(reward.relicLink.relic));
+                    }
+                    rewards.add(jsonReward);
+                }
+                state.put("rewards", rewards);
+                break;
+            case MAP:
+                if (AbstractDungeon.getCurrMapNode() != null) {
+                    state.put("current_node", convertMapRoomNodeToJson(AbstractDungeon.getCurrMapNode()));
+                }
+                ArrayList<Object> nextNodesJson = new ArrayList<>();
+                for(MapRoomNode node : ChoiceScreenUtils.getMapScreenNodeChoices()) {
+                    nextNodesJson.add(convertMapRoomNodeToJson(node));
+                }
+                state.put("next_nodes", nextNodesJson);
+                break;
+            case BOSS_REWARD:
+                ArrayList<Object> bossRelics = new ArrayList<>();
+                for(AbstractRelic relic : AbstractDungeon.bossRelicScreen.relics) {
+                    bossRelics.add(convertRelicToJson(relic));
+                }
+                state.put("boss_relics", bossRelics);
+                break;
+            case SHOP_SCREEN:
+                ArrayList<Object> shopCards = new ArrayList<>();
+                ArrayList<Object> shopRelics = new ArrayList<>();
+                ArrayList<Object> shopPotions = new ArrayList<>();
+                for(AbstractCard card : ChoiceScreenUtils.getShopScreenCards()) {
+                    HashMap<String, Object> jsonCard = convertCardToJson(card);
+                    jsonCard.put("price", card.price);
+                    shopCards.add(jsonCard);
+                }
+                for(StoreRelic relic : ChoiceScreenUtils.getShopScreenRelics()) {
+                    HashMap<String, Object> jsonRelic = convertRelicToJson(relic.relic);
+                    jsonRelic.put("price", relic.price);
+                    shopRelics.add(jsonRelic);
+                }
+                for(StorePotion potion : ChoiceScreenUtils.getShopScreenPotions()) {
+                    HashMap<String, Object> jsonPotion = new HashMap<>();
+                    jsonPotion.put("id", potion.potion.ID);
+                    jsonPotion.put("price", potion.price);
+                    shopPotions.add(jsonPotion);
+                }
+                state.put("cards", shopCards);
+                state.put("relics", shopRelics);
+                state.put("potions", shopPotions);
+                state.put("purge_available", AbstractDungeon.shopScreen.purgeAvailable);
+                state.put("purge_cost", ShopScreen.actualPurgeCost);
+                break;
+            case GRID:
+                ArrayList<Object> gridJson = new ArrayList<>();
+                ArrayList<Object> gridSelectedJson = new ArrayList<>();
+                ArrayList<AbstractCard> gridCards = ChoiceScreenUtils.getGridScreenCards();
+                GridCardSelectScreen screen = AbstractDungeon.gridSelectScreen;
+                for(AbstractCard card : gridCards) {
+                    gridJson.add(convertCardToJson(card));
+                }
+                for(AbstractCard card : screen.selectedCards) {
+                    gridSelectedJson.add(convertCardToJson(card));
+                }
+                int numCards = (int) ReflectionHacks.getPrivate(screen, GridCardSelectScreen.class, "numCards");
+                boolean forUpgrade = (boolean) ReflectionHacks.getPrivate(screen, GridCardSelectScreen.class, "forUpgrade");
+                boolean forTransform = (boolean) ReflectionHacks.getPrivate(screen, GridCardSelectScreen.class, "forTransform");
+                boolean forPurge = (boolean) ReflectionHacks.getPrivate(screen, GridCardSelectScreen.class, "forPurge");
+                state.put("cards", gridJson);
+                state.put("selected_cards", gridSelectedJson);
+                state.put("num_cards", numCards);
+                state.put("for_upgrade", forUpgrade);
+                state.put("for_transform", forTransform);
+                state.put("for_purge", forPurge);
+                state.put("confirm_up", screen.confirmScreenUp);
+                break;
+            case HAND_SELECT:
+                ArrayList<Object> handJson = new ArrayList<Object>();
+                ArrayList<Object> selectedJson = new ArrayList<Object>();
+                ArrayList<AbstractCard> handCards = AbstractDungeon.player.hand.group;
+                // As far as I can tell, this comment is the Java 8 version of a Python list comprehension? I think just looping is more readable.
+                // handJson = handCards.stream().map(GameStateConverter::convertCardToJson).collect(Collectors.toCollection(ArrayList::new));
+                for(AbstractCard card : handCards) {
+                    handJson.add(convertCardToJson(card));
+                }
+                state.put("hand", handJson);
+                ArrayList<AbstractCard> selectedCards = AbstractDungeon.handCardSelectScreen.selectedCards.group;
+                for(AbstractCard card : selectedCards) {
+                    selectedJson.add(convertCardToJson(card));
+                }
+                state.put("selected", selectedJson);
+                state.put("max_cards", AbstractDungeon.handCardSelectScreen.numCardsToSelect);
+                state.put("can_pick_zero", AbstractDungeon.handCardSelectScreen.canPickZero);
+        }
+        System.out.println(state.toString());
         return state;
     }
 
@@ -313,11 +486,13 @@ public class GameStateConverter {
     private static HashMap<String, Object> convertCardToJson(AbstractCard card) {
         HashMap<String, Object> json_card = new HashMap<>();
         json_card.put("name", card.name);
-        json_card.put("id", card.uuid.toString());
+        json_card.put("uuid", card.uuid.toString());
         if(card.misc != 0) {
             json_card.put("misc", card.misc);
         }
         json_card.put("cost", card.costForTurn);
+        json_card.put("upgrades", card.timesUpgraded);
+        json_card.put("id", card.cardID);
         return json_card;
     }
 
@@ -350,6 +525,14 @@ public class GameStateConverter {
             powers.add(json_power);
         }
         return powers;
+    }
+
+    private static HashMap<String, Object> convertRelicToJson(AbstractRelic relic) {
+        HashMap<String, Object> json_relic = new HashMap<>();
+        json_relic.put("id", relic.relicId);
+        json_relic.put("name", relic.name);
+        json_relic.put("counter", relic.counter);
+        return json_relic;
     }
 
 }

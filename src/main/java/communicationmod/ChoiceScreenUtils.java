@@ -16,7 +16,6 @@ import com.megacrit.cardcrawl.helpers.Hitbox;
 import com.megacrit.cardcrawl.helpers.input.InputHelper;
 import com.megacrit.cardcrawl.map.DungeonMap;
 import com.megacrit.cardcrawl.map.MapRoomNode;
-import com.megacrit.cardcrawl.neow.NeowRoom;
 import com.megacrit.cardcrawl.relics.AbstractRelic;
 import com.megacrit.cardcrawl.rewards.RewardItem;
 import com.megacrit.cardcrawl.rewards.chests.AbstractChest;
@@ -58,6 +57,10 @@ public class ChoiceScreenUtils {
         GRID,
         HAND_SELECT,
         INVALID
+    }
+
+    public enum EventDialogType {
+        IMAGE, ROOM, NONE
     }
 
     public static ChoiceType getCurrentChoiceType() {
@@ -166,7 +169,7 @@ public class ChoiceScreenUtils {
         }
     }
 
-    public static boolean isCancelButtonAvailable(ChoiceType choiceType) {
+    private static boolean isCancelButtonAvailable(ChoiceType choiceType) {
         switch (choiceType) {
             case EVENT:
                 return false;
@@ -191,7 +194,6 @@ public class ChoiceScreenUtils {
             case HAND_SELECT:
                 return false;
             default:
-                logger.info("Unimplemented choice.");
                 return false;
         }
     }
@@ -200,7 +202,7 @@ public class ChoiceScreenUtils {
         return isCancelButtonAvailable(getCurrentChoiceType());
     }
 
-    public static String getCancelButtonText(ChoiceType choiceType) {
+    private static String getCancelButtonText(ChoiceType choiceType) {
         switch (choiceType) {
             case CARD_REWARD:
                 return "skip";
@@ -244,7 +246,7 @@ public class ChoiceScreenUtils {
         pressCancelButton(getCurrentChoiceType());
     }
 
-    public static boolean isConfirmButtonAvailable(ChoiceType choiceType) {
+    private static boolean isConfirmButtonAvailable(ChoiceType choiceType) {
         switch (choiceType) {
             case EVENT:
                 return false;
@@ -269,7 +271,6 @@ public class ChoiceScreenUtils {
             case HAND_SELECT:
                 return isHandSelectConfirmButtonEnabled();
             default:
-                logger.info("Unimplemented choice.");
                 return false;
         }
     }
@@ -278,7 +279,7 @@ public class ChoiceScreenUtils {
         return isConfirmButtonAvailable(getCurrentChoiceType());
     }
 
-    public static String getConfirmButtonText(ChoiceType choiceType) {
+    private static String getConfirmButtonText(ChoiceType choiceType) {
         switch (choiceType) {
             case CHEST:
                 return "proceed";
@@ -338,12 +339,12 @@ public class ChoiceScreenUtils {
         return choices;
     }
 
-    private static boolean isBowlAvailable() {
+    public static boolean isBowlAvailable() {
         SingingBowlButton bowlButton = (SingingBowlButton) ReflectionHacks.getPrivate(AbstractDungeon.cardRewardScreen, CardRewardScreen.class, "bowlButton");
         return !((boolean) ReflectionHacks.getPrivate(bowlButton, SingingBowlButton.class, "isHidden"));
     }
 
-    private static boolean isCardRewardSkipAvailable() {
+    public static boolean isCardRewardSkipAvailable() {
         SkipCardButton skipButton = (SkipCardButton) ReflectionHacks.getPrivate(AbstractDungeon.cardRewardScreen, CardRewardScreen.class, "skipButton");
         return !((boolean) ReflectionHacks.getPrivate(skipButton, SkipCardButton.class, "isHidden"));
     }
@@ -398,11 +399,15 @@ public class ChoiceScreenUtils {
         return !(isHidden || isDisabled);
     }
 
-    public static ArrayList<String> getGridScreenChoices() {
-        ArrayList<String> choices = new ArrayList<>();
+    public static ArrayList<AbstractCard> getGridScreenCards() {
         GridCardSelectScreen screen = AbstractDungeon.gridSelectScreen;
         CardGroup cards = (CardGroup) ReflectionHacks.getPrivate(screen, GridCardSelectScreen.class, "targetGroup");
-        for(AbstractCard card : cards.group) {
+        return cards.group;
+    }
+
+    public static ArrayList<String> getGridScreenChoices() {
+        ArrayList<String> choices = new ArrayList<>();
+        for(AbstractCard card : getGridScreenCards()) {
             choices.add(card.name.toLowerCase());
         }
         return choices;
@@ -410,8 +415,7 @@ public class ChoiceScreenUtils {
 
     public static void makeGridScreenChoice (int choice) {
         GridCardSelectScreen screen = AbstractDungeon.gridSelectScreen;
-        CardGroup cards = (CardGroup) ReflectionHacks.getPrivate(screen, GridCardSelectScreen.class, "targetGroup");
-        GridCardSelectScreenPatch.hoverCard = cards.group.get(choice);
+        GridCardSelectScreenPatch.hoverCard = getGridScreenCards().get(choice);
         GridCardSelectScreenPatch.replaceHoverCard = true;
     }
 
@@ -521,32 +525,45 @@ public class ChoiceScreenUtils {
     }
 
     @SuppressWarnings("unchecked")
-    private static ArrayList<Object> getAvailableShopItems() {
-        ArrayList<Object> choices = new ArrayList<>();
+    public static ArrayList<AbstractCard> getShopScreenCards() {
+        ArrayList<AbstractCard> cards = new ArrayList<>();
         ShopScreen screen = AbstractDungeon.shopScreen;
         ArrayList<AbstractCard> coloredCards = (ArrayList<AbstractCard>) ReflectionHacks.getPrivate(screen, ShopScreen.class, "coloredCards");
         ArrayList<AbstractCard> colorlessCards = (ArrayList<AbstractCard>) ReflectionHacks.getPrivate(screen, ShopScreen.class, "colorlessCards");
-        ArrayList<StoreRelic> relics = (ArrayList<StoreRelic>) ReflectionHacks.getPrivate(screen, ShopScreen.class, "relics");
-        ArrayList<StorePotion> potions = (ArrayList<StorePotion>) ReflectionHacks.getPrivate(screen, ShopScreen.class, "potions");
+        cards.addAll(coloredCards);
+        cards.addAll(colorlessCards);
+        return cards;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static ArrayList<StoreRelic> getShopScreenRelics() {
+        ShopScreen screen = AbstractDungeon.shopScreen;
+        return (ArrayList<StoreRelic>) ReflectionHacks.getPrivate(screen, ShopScreen.class, "relics");
+    }
+
+    @SuppressWarnings("unchecked")
+    public static ArrayList<StorePotion> getShopScreenPotions() {
+        ShopScreen screen = AbstractDungeon.shopScreen;
+        return (ArrayList<StorePotion>) ReflectionHacks.getPrivate(screen, ShopScreen.class, "potions");
+    }
+
+    private static ArrayList<Object> getAvailableShopItems() {
+        ArrayList<Object> choices = new ArrayList<>();
+        ShopScreen screen = AbstractDungeon.shopScreen;
         if(screen.purgeAvailable && AbstractDungeon.player.gold >= ShopScreen.actualPurgeCost) {
             choices.add("purge");
         }
-        for(AbstractCard card : coloredCards) {
+        for(AbstractCard card : getShopScreenCards()) {
             if(card.price <= AbstractDungeon.player.gold) {
                 choices.add(card);
             }
         }
-        for(AbstractCard card : colorlessCards) {
-            if(card.price <= AbstractDungeon.player.gold) {
-                choices.add(card);
-            }
-        }
-        for(StoreRelic relic : relics) {
+        for(StoreRelic relic : getShopScreenRelics()) {
             if(relic.price <= AbstractDungeon.player.gold) {
                 choices.add(relic);
             }
         }
-        for(StorePotion potion : potions) {
+        for(StorePotion potion : getShopScreenPotions()) {
             if(potion.price <= AbstractDungeon.player.gold) {
                 choices.add(potion);
             }
@@ -662,20 +679,33 @@ public class ChoiceScreenUtils {
         }
     }
 
+
+    public static EventDialogType getEventDialogType() {
+        boolean genericShown = (boolean) ReflectionHacks.getPrivateStatic(GenericEventDialog.class, "show");
+        if (genericShown) {
+            return EventDialogType.IMAGE;
+        }
+        boolean roomShown = (boolean) ReflectionHacks.getPrivate(AbstractDungeon.getCurrRoom().event.roomEventText, RoomEventDialog.class, "show");
+        if (roomShown) {
+            return EventDialogType.ROOM;
+        } else {
+            return EventDialogType.NONE;
+        }
+    }
+
     public static ArrayList<String> getEventScreenChoices() {
         ArrayList<String> choiceList = new ArrayList<>();
         ArrayList<LargeDialogOptionButton> buttons1 = AbstractDungeon.getCurrRoom().event.imageEventText.optionList;
         ArrayList<LargeDialogOptionButton> buttons2 = RoomEventDialog.optionList;
-        boolean genericShown = (boolean) ReflectionHacks.getPrivateStatic(GenericEventDialog.class, "show");
-        boolean roomShown = (boolean) ReflectionHacks.getPrivate(AbstractDungeon.getCurrRoom().event.roomEventText, RoomEventDialog.class, "show");
+        EventDialogType dialogType = getEventDialogType();
 
-        if(genericShown && buttons1.size() > 0) {
+        if(dialogType == EventDialogType.IMAGE && buttons1.size() > 0) {
             for (LargeDialogOptionButton button : buttons1) {
                 if (!button.isDisabled) {
                     choiceList.add(getOptionName(button.msg).toLowerCase());
                 }
             }
-        } else if (roomShown && buttons2.size() > 0) {
+        } else if (dialogType == EventDialogType.ROOM && buttons2.size() > 0) {
             for (LargeDialogOptionButton button : buttons2) {
                 if (!button.isDisabled) {
                     choiceList.add(getOptionName(button.msg).toLowerCase());
@@ -750,10 +780,12 @@ public class ChoiceScreenUtils {
     private static ArrayList<AbstractCampfireOption> getValidRestRoomButtons() {
         ArrayList<AbstractCampfireOption> choiceList = new ArrayList<>();
         RestRoom room = (RestRoom) AbstractDungeon.getCurrRoom();
-        ArrayList<AbstractCampfireOption> buttons = (ArrayList<AbstractCampfireOption>) ReflectionHacks.getPrivate(room.campfireUI, CampfireUI.class, "buttons");
-        for(AbstractCampfireOption button : buttons) {
-            if(button.usable) {
-                choiceList.add(button);
+        if(!isRestRoomProceedAvailable()) {
+            ArrayList<AbstractCampfireOption> buttons = (ArrayList<AbstractCampfireOption>) ReflectionHacks.getPrivate(room.campfireUI, CampfireUI.class, "buttons");
+            for (AbstractCampfireOption button : buttons) {
+                if (button.usable) {
+                    choiceList.add(button);
+                }
             }
         }
         return choiceList;

@@ -94,11 +94,11 @@ public class CommandExecutor {
         }
     }
 
-    private static boolean isEndCommandAvailable() {
+    public static boolean isEndCommandAvailable() {
         return isPlayCommandAvailable();
     }
 
-    private static boolean isChooseCommandAvailable() {
+    public static boolean isChooseCommandAvailable() {
         if(AbstractDungeon.isPlayerInDungeon()) {
             return !isPlayCommandAvailable() && !ChoiceScreenUtils.getCurrentChoiceList().isEmpty();
         } else {
@@ -106,7 +106,7 @@ public class CommandExecutor {
         }
     }
 
-    private static boolean isPotionCommandAvailable() {
+    public static boolean isPotionCommandAvailable() {
         if(AbstractDungeon.isPlayerInDungeon()) {
             for(AbstractPotion potion : AbstractDungeon.player.potions) {
                 if(!(potion instanceof PotionSlot)) {
@@ -117,7 +117,7 @@ public class CommandExecutor {
         return false;
     }
 
-    private static boolean isConfirmCommandAvailable() {
+    public static boolean isConfirmCommandAvailable() {
         if(AbstractDungeon.isPlayerInDungeon()) {
             return ChoiceScreenUtils.isConfirmButtonAvailable();
         } else {
@@ -125,7 +125,7 @@ public class CommandExecutor {
         }
     }
 
-    private static boolean isCancelCommandAvailable() {
+    public static boolean isCancelCommandAvailable() {
         if(AbstractDungeon.isPlayerInDungeon()) {
             return ChoiceScreenUtils.isCancelButtonAvailable();
         } else {
