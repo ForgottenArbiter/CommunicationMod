@@ -62,6 +62,9 @@ public class CommandExecutor {
             case "start":
                 executeStartCommand(tokens);
                 return true;
+            case "state":
+                executeStateCommand();
+                return false;
 
             default:
                 logger.info("This should never happen.");
@@ -92,6 +95,7 @@ public class CommandExecutor {
         if (isStartCommandAvailable()) {
             availableCommands.add("start");
         }
+        availableCommands.add("state");
         return availableCommands;
     }
 
@@ -99,8 +103,12 @@ public class CommandExecutor {
         return getAvailableCommands().contains(command);
     }
 
+    public static boolean isInDungeon() {
+        return CardCrawlGame.mode == CardCrawlGame.GameMode.GAMEPLAY && AbstractDungeon.isPlayerInDungeon() && AbstractDungeon.currMapNode != null;
+    }
+
     private static boolean isPlayCommandAvailable() {
-        if(AbstractDungeon.isPlayerInDungeon()) {
+        if(isInDungeon()) {
             return AbstractDungeon.getCurrRoom().phase == AbstractRoom.RoomPhase.COMBAT && !AbstractDungeon.isScreenUp;
         } else {
             return false;
@@ -112,7 +120,7 @@ public class CommandExecutor {
     }
 
     public static boolean isChooseCommandAvailable() {
-        if(AbstractDungeon.isPlayerInDungeon()) {
+        if(isInDungeon()) {
             return !isPlayCommandAvailable() && !ChoiceScreenUtils.getCurrentChoiceList().isEmpty();
         } else {
             return false;
@@ -120,7 +128,7 @@ public class CommandExecutor {
     }
 
     public static boolean isPotionCommandAvailable() {
-        if(AbstractDungeon.isPlayerInDungeon()) {
+        if(isInDungeon()) {
             for(AbstractPotion potion : AbstractDungeon.player.potions) {
                 if(!(potion instanceof PotionSlot)) {
                     return true;
@@ -131,7 +139,7 @@ public class CommandExecutor {
     }
 
     public static boolean isConfirmCommandAvailable() {
-        if(AbstractDungeon.isPlayerInDungeon()) {
+        if(isInDungeon()) {
             return ChoiceScreenUtils.isConfirmButtonAvailable();
         } else {
             return false;
@@ -139,7 +147,7 @@ public class CommandExecutor {
     }
 
     public static boolean isCancelCommandAvailable() {
-        if(AbstractDungeon.isPlayerInDungeon()) {
+        if(isInDungeon()) {
             return ChoiceScreenUtils.isCancelButtonAvailable();
         } else {
             return false;
@@ -147,7 +155,11 @@ public class CommandExecutor {
     }
 
     public static boolean isStartCommandAvailable() {
-        return !AbstractDungeon.isPlayerInDungeon();
+        return !isInDungeon();
+    }
+
+    private static void executeStateCommand() {
+        CommunicationMod.mustSendGameState = true;
     }
 
     private static void executePlayCommand(String[] tokens) throws InvalidCommandException {

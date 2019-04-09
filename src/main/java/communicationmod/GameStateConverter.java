@@ -6,6 +6,7 @@ import com.megacrit.cardcrawl.actions.GameActionManager;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.characters.AbstractPlayer;
 import com.megacrit.cardcrawl.core.AbstractCreature;
+import com.megacrit.cardcrawl.core.CardCrawlGame;
 import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.events.RoomEventDialog;
@@ -17,6 +18,8 @@ import com.megacrit.cardcrawl.powers.AbstractPower;
 import com.megacrit.cardcrawl.relics.AbstractRelic;
 import com.megacrit.cardcrawl.rewards.RewardItem;
 import com.megacrit.cardcrawl.rooms.*;
+import com.megacrit.cardcrawl.screens.DeathScreen;
+import com.megacrit.cardcrawl.screens.VictoryScreen;
 import com.megacrit.cardcrawl.screens.select.GridCardSelectScreen;
 import com.megacrit.cardcrawl.shop.ShopScreen;
 import com.megacrit.cardcrawl.shop.StorePotion;
@@ -37,14 +40,23 @@ public class GameStateConverter {
     private static boolean externalChange = false;
     private static boolean myTurn = false;
     private static boolean blocked = false;
-    public static boolean waitingForCommand = false;
+    private static boolean waitingForCommand = false;
+    private static boolean hasPresentedOutOfGameState = false;
 
     /**
-     * Used to indicate that something has been done that will change the game state,
-     * and hasStateChanged() should indicate a state change when the state next becomes stable
+     * Used to indicate that something (in game logic, not external command) has been done that will change the game state,
+     * and hasStateChanged() should indicate a state change when the state next becomes stable.
      */
     public static void registerStateChange() {
         externalChange = true;
+        waitingForCommand = false;
+    }
+
+    /**
+     * Used to indicate that an external command has been executed
+     */
+    public static void registerCommandExecution() {
+        waitingForCommand = false;
     }
 
     /**
@@ -80,14 +92,19 @@ public class GameStateConverter {
      * Detects whether the game state is stable and we are ready to receive a command from the user.
      * @return whether the state is stable
      */
-    public static boolean hasStateChanged() {
+    private static boolean hasDungeonStateChanged() {
         if(blocked) {
             return false;
         }
+        hasPresentedOutOfGameState = false;
         AbstractDungeon.CurrentScreen newScreen = AbstractDungeon.screen;
         boolean newScreenUp = AbstractDungeon.isScreenUp;
         AbstractRoom.RoomPhase newPhase = AbstractDungeon.getCurrRoom().phase;
         boolean inCombat = (newPhase == AbstractRoom.RoomPhase.COMBAT);
+        // This check happens first since dying can happen in combat and messes with the other cases.
+        if(newScreen == AbstractDungeon.CurrentScreen.DEATH && newScreen != previousScreen) {
+            return true;
+        }
         // We are never ready to receive commands when it is not our turn.
         if(inCombat && (!myTurn || AbstractDungeon.getMonsters().areMonstersBasicallyDead() )) {
             return false;
@@ -141,6 +158,48 @@ public class GameStateConverter {
         return false;
     }
 
+    public static boolean checkForMenuStateChange() {
+        boolean stateChange = false;
+        if(!hasPresentedOutOfGameState && CardCrawlGame.mode == CardCrawlGame.GameMode.CHAR_SELECT && CardCrawlGame.mainMenuScreen != null) {
+            stateChange = true;
+            hasPresentedOutOfGameState = true;
+        }
+        if(stateChange) {
+            externalChange = false;
+            waitingForCommand = true;
+        }
+        return stateChange;
+    }
+
+    public static boolean checkForDungeonStateChange() {
+        boolean stateChange = false;
+        if(CommandExecutor.isInDungeon()) {
+            stateChange = hasDungeonStateChanged();
+            if(stateChange) {
+                externalChange = false;
+                waitingForCommand = true;
+                previousPhase = AbstractDungeon.getCurrRoom().phase;
+                previousScreen = AbstractDungeon.screen;
+                previousScreenUp = AbstractDungeon.isScreenUp;
+                previousGold = AbstractDungeon.player.gold;
+            }
+        }
+        return stateChange;
+    }
+
+    public static String getCommunicationState() {
+        HashMap<String, Object> response = new HashMap<>();
+        response.put("available_commands", CommandExecutor.getAvailableCommands());
+        response.put("ready_for_command", waitingForCommand);
+        boolean isInGame = CommandExecutor.isInDungeon();
+        response.put("in_game", isInGame);
+        if(isInGame) {
+            response.put("game_state", getGameState());
+        }
+        Gson gson = new Gson();
+        return gson.toJson(response);
+    }
+
 
     /**
      * Creates a JSON representation of the game state, which will be sent to the client.
@@ -166,14 +225,9 @@ public class GameStateConverter {
      * - "choice_list": If the command is available, the possible choices for the choose command.
      * @return A JSON representation of the game state (as a String)
      */
-    public static String getGameStateGson() {
-        externalChange = false;
+    public static HashMap<String, Object> getGameState() {
         HashMap<String, Object> state = new HashMap<>();
 
-        previousPhase = AbstractDungeon.getCurrRoom().phase;
-        previousScreen = AbstractDungeon.screen;
-        previousScreenUp = AbstractDungeon.isScreenUp;
-        previousGold = AbstractDungeon.player.gold;
 
         state.put("screen", AbstractDungeon.screen.name());
         state.put("is_screen_up", previousScreenUp);
@@ -218,12 +272,11 @@ public class GameStateConverter {
         if(CommandExecutor.isChooseCommandAvailable()) {
             state.put("choice_list", ChoiceScreenUtils.getCurrentChoiceList());
         }
-        if(AbstractDungeon.isScreenUp) {
+        // It makes sense to put victory and death screen state in here, though these screens are not always actually up
+        if(AbstractDungeon.isScreenUp || AbstractDungeon.screen == AbstractDungeon.CurrentScreen.DEATH || AbstractDungeon.screen == AbstractDungeon.CurrentScreen.VICTORY) {
             state.put("screen_state", getScreenState());
         }
-
-        Gson gson = new Gson();
-        return gson.toJson(state);
+        return state;
     }
 
     /**
@@ -265,19 +318,12 @@ public class GameStateConverter {
         HashMap<String, Object> state = new HashMap<>();
         ArrayList<Object> options = new ArrayList<>();
         ChoiceScreenUtils.EventDialogType eventDialogType = ChoiceScreenUtils.getEventDialogType();
-        if (eventDialogType == ChoiceScreenUtils.EventDialogType.IMAGE) {
-            for (LargeDialogOptionButton button : AbstractDungeon.getCurrRoom().event.imageEventText.optionList) {
+        if (eventDialogType == ChoiceScreenUtils.EventDialogType.IMAGE || eventDialogType == ChoiceScreenUtils.EventDialogType.ROOM) {
+            for (LargeDialogOptionButton button : ChoiceScreenUtils.getEventButtons()) {
                 HashMap<String, Object> json_button = new HashMap<>();
                 json_button.put("text", removeTextFormatting(button.msg));
                 json_button.put("disabled", button.isDisabled);
-                options.add(json_button);
-            }
-            state.put("body_text", removeTextFormatting(UpdateBodyTextPatch.bodyText));
-        } else if(eventDialogType == ChoiceScreenUtils.EventDialogType.ROOM) {
-            for (LargeDialogOptionButton button : RoomEventDialog.optionList) {
-                HashMap<String, Object> json_button = new HashMap<>();
-                json_button.put("text", removeTextFormatting(button.msg));
-                json_button.put("disabled", button.isDisabled);
+                json_button.put("label", ChoiceScreenUtils.getOptionName(button.msg));
                 options.add(json_button);
             }
             state.put("body_text", removeTextFormatting(UpdateBodyTextPatch.bodyText));
@@ -414,6 +460,15 @@ public class GameStateConverter {
                 state.put("selected", selectedJson);
                 state.put("max_cards", AbstractDungeon.handCardSelectScreen.numCardsToSelect);
                 state.put("can_pick_zero", AbstractDungeon.handCardSelectScreen.canPickZero);
+                break;
+            case GAME_OVER:
+                int score = 0;
+                if(AbstractDungeon.deathScreen != null) {
+                    score = (int) ReflectionHacks.getPrivate(AbstractDungeon.deathScreen, DeathScreen.class, "score");
+                } else if(AbstractDungeon.victoryScreen != null) {
+                    score = (int) ReflectionHacks.getPrivate(AbstractDungeon.victoryScreen, VictoryScreen.class, "score");
+                }
+                state.put("score", score);
         }
         System.out.println(state.toString());
         return state;

@@ -29,10 +29,14 @@ import com.megacrit.cardcrawl.shop.StorePotion;
 import com.megacrit.cardcrawl.shop.StoreRelic;
 import com.megacrit.cardcrawl.ui.buttons.*;
 import com.megacrit.cardcrawl.ui.campfire.AbstractCampfireOption;
+import communicationmod.patches.GremlinMatchGamePatch;
 import communicationmod.patches.GridCardSelectScreenPatch;
+import communicationmod.patches.MapRoomNodeHoverPatch;
+import communicationmod.patches.ShopScreenPatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.smartcardio.Card;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -56,6 +60,7 @@ public class ChoiceScreenUtils {
         SHOP_SCREEN,
         GRID,
         HAND_SELECT,
+        GAME_OVER,
         INVALID
     }
 
@@ -65,7 +70,7 @@ public class ChoiceScreenUtils {
 
     public static ChoiceType getCurrentChoiceType() {
         if (!AbstractDungeon.isScreenUp) {
-            if (AbstractDungeon.getCurrRoom().phase == AbstractRoom.RoomPhase.EVENT) {
+            if (AbstractDungeon.getCurrRoom().phase == AbstractRoom.RoomPhase.EVENT || (AbstractDungeon.getCurrRoom().event != null && AbstractDungeon.getCurrRoom().phase == AbstractRoom.RoomPhase.COMPLETE)) {
                 return ChoiceType.EVENT;
             } else if (AbstractDungeon.getCurrRoom() instanceof TreasureRoomBoss || AbstractDungeon.getCurrRoom() instanceof TreasureRoom) {
                 return ChoiceType.CHEST;
@@ -93,6 +98,11 @@ public class ChoiceScreenUtils {
                 return ChoiceType.GRID;
             case HAND_SELECT:
                 return ChoiceType.HAND_SELECT;
+            case DEATH:
+            case VICTORY:
+            case UNLOCK:
+            case NEOW_UNLOCK:
+                return ChoiceType.GAME_OVER;
             default:
                 return ChoiceType.INVALID;
         }
@@ -193,6 +203,8 @@ public class ChoiceScreenUtils {
                 return isGridScreenCancelAvailable();
             case HAND_SELECT:
                 return false;
+            case GAME_OVER:
+                return false;
             default:
                 return false;
         }
@@ -270,6 +282,8 @@ public class ChoiceScreenUtils {
                 return isGridScreenConfirmAvailable();
             case HAND_SELECT:
                 return isHandSelectConfirmButtonEnabled();
+            case GAME_OVER:
+                return true;
             default:
                 return false;
         }
@@ -293,6 +307,8 @@ public class ChoiceScreenUtils {
                 return "confirm";
             case HAND_SELECT:
                 return "confirm";
+            case GAME_OVER:
+                return "proceed";
             default:
                 return "confirm";
         }
@@ -321,6 +337,9 @@ public class ChoiceScreenUtils {
                 return;
             case HAND_SELECT:
                 clickHandSelectScreenConfirmButton();
+                return;
+            case GAME_OVER:
+                clickGameOverReturnButton();
         }
     }
 
@@ -581,15 +600,17 @@ public class ChoiceScreenUtils {
                     1, ShopScreen.NAMES[13], false, false, true, true);
         } else if (shopItem instanceof AbstractCard) {
             AbstractCard card = (AbstractCard)shopItem;
-            setCursorPosition(card.hb.cX, Settings.HEIGHT - card.hb.cY);
+            //setCursorPosition(card.hb.cX, Settings.HEIGHT - card.hb.cY);
+            ShopScreenPatch.doHover = true;
+            ShopScreenPatch.hoverCard = card;
             card.hb.clicked = true;
         } else if (shopItem instanceof StoreRelic) {
             StoreRelic relic = (StoreRelic) shopItem;
-            setCursorPosition(relic.relic.hb.cX, Settings.HEIGHT - relic.relic.hb.cY);
+            //setCursorPosition(relic.relic.hb.cX, Settings.HEIGHT - relic.relic.hb.cY);
             relic.relic.hb.clicked = true;
         } else if (shopItem instanceof StorePotion) {
             StorePotion potion = (StorePotion) shopItem;
-            setCursorPosition(potion.potion.hb.cX, Settings.HEIGHT - potion.potion.hb.cY);
+            //setCursorPosition(potion.potion.hb.cX, Settings.HEIGHT - potion.potion.hb.cY);
             potion.potion.hb.clicked = true;
         }
     }
@@ -664,11 +685,13 @@ public class ChoiceScreenUtils {
         }
         ArrayList<MapRoomNode> nodeChoices = getMapScreenNodeChoices();
         MapRoomNode chosenNode = nodeChoices.get(choice);
-        setCursorPosition(chosenNode.hb.cX, Settings.HEIGHT - chosenNode.hb.cY);
+        //setCursorPosition(chosenNode.hb.cX, Settings.HEIGHT - chosenNode.hb.cY);
+        MapRoomNodeHoverPatch.hoverNode = chosenNode;
+        MapRoomNodeHoverPatch.doHover = true;
         AbstractDungeon.dungeonMapScreen.clicked = true;
     }
 
-    private static String getOptionName(String input) {
+    public static String getOptionName(String input) {
         String unformatted = input.replaceAll("#.|NL", "");
         Pattern regex = Pattern.compile("\\[(.*?)\\]");
         Matcher matcher = regex.matcher(unformatted);
@@ -693,23 +716,36 @@ public class ChoiceScreenUtils {
         }
     }
 
+    public static ArrayList<LargeDialogOptionButton> getEventButtons() {
+        EventDialogType eventType = getEventDialogType();
+        switch(eventType) {
+            case IMAGE:
+                return AbstractDungeon.getCurrRoom().event.imageEventText.optionList;
+            case ROOM:
+                return RoomEventDialog.optionList;
+            default:
+                return new ArrayList<>();
+        }
+    }
+
+    public static ArrayList<LargeDialogOptionButton> getActiveEventButtons() {
+        ArrayList<LargeDialogOptionButton> buttons = getEventButtons();
+        ArrayList<LargeDialogOptionButton> activeButtons = new ArrayList<>();
+        for(LargeDialogOptionButton button : buttons) {
+            if(!button.isDisabled) {
+                activeButtons.add(button);
+            }
+        }
+        return activeButtons;
+    }
+
     public static ArrayList<String> getEventScreenChoices() {
         ArrayList<String> choiceList = new ArrayList<>();
-        ArrayList<LargeDialogOptionButton> buttons1 = AbstractDungeon.getCurrRoom().event.imageEventText.optionList;
-        ArrayList<LargeDialogOptionButton> buttons2 = RoomEventDialog.optionList;
-        EventDialogType dialogType = getEventDialogType();
+        ArrayList<LargeDialogOptionButton> activeButtons = getActiveEventButtons();
 
-        if(dialogType == EventDialogType.IMAGE && buttons1.size() > 0) {
-            for (LargeDialogOptionButton button : buttons1) {
-                if (!button.isDisabled) {
-                    choiceList.add(getOptionName(button.msg).toLowerCase());
-                }
-            }
-        } else if (dialogType == EventDialogType.ROOM && buttons2.size() > 0) {
-            for (LargeDialogOptionButton button : buttons2) {
-                if (!button.isDisabled) {
-                    choiceList.add(getOptionName(button.msg).toLowerCase());
-                }
+        if (activeButtons.size() > 0) {
+            for(LargeDialogOptionButton button : activeButtons) {
+                choiceList.add(getOptionName(button.msg).toLowerCase());
             }
         } else if(AbstractDungeon.getCurrRoom().event instanceof GremlinWheelGame) {
             choiceList.add("spin");
@@ -718,7 +754,7 @@ public class ChoiceScreenUtils {
             CardGroup gameCardGroup = (CardGroup) ReflectionHacks.getPrivate(event, GremlinMatchGame.class, "cards");
             for (AbstractCard c : gameCardGroup.group) {
                 if (c.isFlipped) {
-                    choiceList.add("unknown");
+                    choiceList.add(String.format("card%d", GremlinMatchGamePatch.cardPositions.get(c.uuid)));
                 }
             }
         }
@@ -726,16 +762,9 @@ public class ChoiceScreenUtils {
     }
 
     public static void makeEventChoice(int choice) {
-        ArrayList<LargeDialogOptionButton> buttons1 = AbstractDungeon.getCurrRoom().event.imageEventText.optionList;
-        ArrayList<LargeDialogOptionButton> buttons2 = RoomEventDialog.optionList;
-        boolean genericShown = (boolean) ReflectionHacks.getPrivateStatic(GenericEventDialog.class, "show");
-        boolean roomShown = (boolean) ReflectionHacks.getPrivate(AbstractDungeon.getCurrRoom().event.roomEventText, RoomEventDialog.class, "show");
-        if (genericShown && buttons1.size() > 0) {
-            LargeDialogOptionButton chosenButton = buttons1.get(choice);
-            chosenButton.pressed = true;
-        } else if(roomShown && buttons2.size() > 0) {
-            LargeDialogOptionButton chosenButton = buttons2.get(choice);
-            chosenButton.pressed = true;
+        ArrayList<LargeDialogOptionButton> activeButtons = getActiveEventButtons();
+        if (activeButtons.size() > 0) {
+            activeButtons.get(choice).pressed = true;
         } else if (AbstractDungeon.getCurrRoom().event instanceof GremlinWheelGame) {
             GremlinWheelGame event = (GremlinWheelGame) AbstractDungeon.getCurrRoom().event;
             ReflectionHacks.setPrivate(event, GremlinWheelGame.class, "buttonPressed", true);
@@ -794,6 +823,16 @@ public class ChoiceScreenUtils {
     private static String getCampfireOptionName(AbstractCampfireOption option) {
         String label = (String) ReflectionHacks.getPrivate(option, AbstractCampfireOption.class, "label");
         return label.toLowerCase();
+    }
+
+    private static void clickGameOverReturnButton() {
+        //For now, just copying the functionality from VictoryScreen.update(), always skipping credits
+        AbstractDungeon.unlocks.clear();
+        Settings.isTrial = false;
+        Settings.isDailyRun = false;
+        Settings.isEndless = false;
+        CardCrawlGame.trial = null;
+        CardCrawlGame.startOver();
     }
 
 

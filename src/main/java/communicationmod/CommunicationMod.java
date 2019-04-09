@@ -3,6 +3,7 @@ package communicationmod;
 import basemod.BaseMod;
 import basemod.interfaces.PostDungeonUpdateSubscriber;
 import basemod.interfaces.PostInitializeSubscriber;
+import basemod.interfaces.PostUpdateSubscriber;
 import basemod.interfaces.PreUpdateSubscriber;
 import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
 import com.megacrit.cardcrawl.cards.AbstractCard;
@@ -21,7 +22,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import static java.lang.Thread.sleep;
 
 @SpireInitializer
-public class CommunicationMod implements PostInitializeSubscriber, PostDungeonUpdateSubscriber, PreUpdateSubscriber {
+public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSubscriber, PostDungeonUpdateSubscriber, PreUpdateSubscriber {
 
     private static Process listener;
     private static StringBuilder inputBuffer = new StringBuilder();
@@ -34,7 +35,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostDungeonUp
     private static final String MODNAME = "Communication Mod";
     private static final String AUTHOR = "Forgotten Arbiter";
     private static final String DESCRIPTION = "This mod communicates with an external program to play Slay the Spire.";
-    public static boolean waitingForCommand = false;
+    public static boolean mustSendGameState = false;
     private boolean sentGameState = false;
 
     public CommunicationMod(){
@@ -59,7 +60,10 @@ public class CommunicationMod implements PostInitializeSubscriber, PostDungeonUp
     public void receivePreUpdate() {
         if(messageAvailable()) {
             try {
-                CommandExecutor.executeCommand(readMessage());
+                boolean stateChanged = CommandExecutor.executeCommand(readMessage());
+                if(stateChanged) {
+                    GameStateConverter.registerCommandExecution();
+                }
             } catch (InvalidCommandException e) {
                 sendMessage(String.format("{\"error\": \"%s\"}", e.getMessage()));
             }
@@ -71,14 +75,23 @@ public class CommunicationMod implements PostInitializeSubscriber, PostDungeonUp
         logger.info(readMessageBlocking());
     }
 
-    public void receivePostDungeonUpdate() {
-        if(testForStateChange()) {
-            sendGameState();
+    public void receivePostUpdate() {
+        if(!mustSendGameState && GameStateConverter.checkForMenuStateChange()) {
+            mustSendGameState = true;
         }
-        if(AbstractDungeon.getCurrRoom().isBattleOver) {
-            GameStateConverter.signalTurnEnd();
+        if(mustSendGameState) {
+            sendGameState();
+            mustSendGameState = false;
         }
     }
+     public void receivePostDungeonUpdate() {
+         if (GameStateConverter.checkForDungeonStateChange()) {
+             mustSendGameState = true;
+         }
+         if(AbstractDungeon.getCurrRoom().isBattleOver) {
+             GameStateConverter.signalTurnEnd();
+         }
+     }
 
     private void startCommunicationThreads() {
         writeQueue = new LinkedBlockingQueue<String>();
@@ -90,7 +103,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostDungeonUp
     }
 
     private static void sendGameState() {
-        String state = GameStateConverter.getGameStateGson();
+        String state = GameStateConverter.getCommunicationState();
         sendMessage(state);
     }
 
@@ -121,14 +134,6 @@ public class CommunicationMod implements PostInitializeSubscriber, PostDungeonUp
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted while trying to read message from subprocess.");
         }
-    }
-
-    public static boolean testForStateChange() {
-        boolean hasStateChanged = GameStateConverter.hasStateChanged();
-        if (hasStateChanged) {
-            waitingForCommand = true;
-        }
-        return hasStateChanged;
     }
 
 }
