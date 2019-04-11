@@ -8,6 +8,7 @@ import com.megacrit.cardcrawl.core.CardCrawlGame;
 import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.dungeons.TheEnding;
+import com.megacrit.cardcrawl.events.AbstractImageEvent;
 import com.megacrit.cardcrawl.events.GenericEventDialog;
 import com.megacrit.cardcrawl.events.RoomEventDialog;
 import com.megacrit.cardcrawl.events.shrines.GremlinMatchGame;
@@ -36,7 +37,6 @@ import communicationmod.patches.ShopScreenPatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.smartcardio.Card;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -61,6 +61,7 @@ public class ChoiceScreenUtils {
         GRID,
         HAND_SELECT,
         GAME_OVER,
+        COMPLETE,
         INVALID
     }
 
@@ -78,6 +79,10 @@ public class ChoiceScreenUtils {
                 return ChoiceType.SHOP_ROOM;
             } else if (AbstractDungeon.getCurrRoom() instanceof RestRoom) {
                 return ChoiceType.REST;
+            } else if (AbstractDungeon.getCurrRoom().phase == AbstractRoom.RoomPhase.COMPLETE && AbstractDungeon.actionManager.isEmpty() && !AbstractDungeon.isFadingOut) {
+                if (AbstractDungeon.getCurrRoom().event == null || (!(AbstractDungeon.getCurrRoom().event instanceof AbstractImageEvent) && (!AbstractDungeon.getCurrRoom().event.hasFocus))) {
+                    return ChoiceType.COMPLETE;
+                }
             } else {
                 return ChoiceType.INVALID;
             }
@@ -110,32 +115,49 @@ public class ChoiceScreenUtils {
 
     public static ArrayList<String> getCurrentChoiceList() {
         ChoiceType choiceType = getCurrentChoiceType();
+        ArrayList<String> choices;
         switch (choiceType) {
             case EVENT:
-                return getEventScreenChoices();
+                choices = getEventScreenChoices();
+                break;
             case CHEST:
-                return getChestRoomChoices();
+                choices = getChestRoomChoices();
+                break;
             case SHOP_ROOM:
-                return getShopRoomChoices();
+                choices = getShopRoomChoices();
+                break;
             case REST:
-                return getRestRoomChoices();
+                choices = getRestRoomChoices();
+                break;
             case CARD_REWARD:
-                return getCardRewardScreenChoices();
+                choices = getCardRewardScreenChoices();
+                break;
             case COMBAT_REWARD:
-                return getCombatRewardScreenChoices();
+                choices = getCombatRewardScreenChoices();
+                break;
             case MAP:
-                return getMapScreenChoices();
+                choices = getMapScreenChoices();
+                break;
             case BOSS_REWARD:
-                return getBossRewardScreenChoices();
+                choices = getBossRewardScreenChoices();
+                break;
             case SHOP_SCREEN:
-                return getShopScreenChoices();
+                choices = getShopScreenChoices();
+                break;
             case GRID:
-                return getGridScreenChoices();
+                choices = getGridScreenChoices();
+                break;
             case HAND_SELECT:
-                return getHandSelectScreenChoices();
+                choices = getHandSelectScreenChoices();
+                break;
             default:
                 return new ArrayList<>();
         }
+        ArrayList<String> lowerCaseChoices = new ArrayList<>();
+        for(String item : choices) {
+            lowerCaseChoices.add(item.toLowerCase());
+        }
+        return lowerCaseChoices;
     }
 
     public static void executeChoice(int choice_index) {
@@ -204,6 +226,8 @@ public class ChoiceScreenUtils {
             case HAND_SELECT:
                 return false;
             case GAME_OVER:
+                return false;
+            case COMPLETE:
                 return false;
             default:
                 return false;
@@ -284,6 +308,8 @@ public class ChoiceScreenUtils {
                 return isHandSelectConfirmButtonEnabled();
             case GAME_OVER:
                 return true;
+            case COMPLETE:
+                return true;
             default:
                 return false;
         }
@@ -308,6 +334,8 @@ public class ChoiceScreenUtils {
             case HAND_SELECT:
                 return "confirm";
             case GAME_OVER:
+                return "proceed";
+            case COMPLETE:
                 return "proceed";
             default:
                 return "confirm";
@@ -340,6 +368,9 @@ public class ChoiceScreenUtils {
                 return;
             case GAME_OVER:
                 clickGameOverReturnButton();
+                return;
+            case COMPLETE:
+                clickProceedButton();
         }
     }
 

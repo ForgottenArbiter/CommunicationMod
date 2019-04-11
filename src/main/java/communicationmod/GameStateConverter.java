@@ -105,6 +105,10 @@ public class GameStateConverter {
         if(newScreen == AbstractDungeon.CurrentScreen.DEATH && newScreen != previousScreen) {
             return true;
         }
+        // These screens have no interaction available.
+        if(newScreen == AbstractDungeon.CurrentScreen.DOOR_UNLOCK || newScreen == AbstractDungeon.CurrentScreen.NO_INTERACT) {
+            return false;
+        }
         // We are never ready to receive commands when it is not our turn.
         if(inCombat && (!myTurn || AbstractDungeon.getMonsters().areMonstersBasicallyDead() )) {
             return false;
@@ -548,6 +552,9 @@ public class GameStateConverter {
         json_card.put("cost", card.costForTurn);
         json_card.put("upgrades", card.timesUpgraded);
         json_card.put("id", card.cardID);
+        json_card.put("type", card.type.name());
+        json_card.put("rarity", card.rarity.name());
+        json_card.put("has_target", card.target== AbstractCard.CardTarget.SELF_AND_ENEMY || card.target == AbstractCard.CardTarget.ENEMY);
         return json_card;
     }
 
@@ -558,6 +565,7 @@ public class GameStateConverter {
         json_monster.put("max_hp", monster.maxHealth);
         json_monster.put("intent", monster.intent.name());
         json_monster.put("half_dead", monster.halfDead);
+        json_monster.put("is_gone", monster.isDeadOrEscaped());
         json_monster.put("block", monster.currentBlock);
         json_monster.put("powers", convertCreaturePowersToJson(monster));
         return json_monster;
