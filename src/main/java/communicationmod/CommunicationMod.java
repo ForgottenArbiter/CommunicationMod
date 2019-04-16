@@ -5,19 +5,21 @@ import basemod.interfaces.PostDungeonUpdateSubscriber;
 import basemod.interfaces.PostInitializeSubscriber;
 import basemod.interfaces.PostUpdateSubscriber;
 import basemod.interfaces.PreUpdateSubscriber;
+import com.evacipated.cardcrawl.modthespire.lib.SpireConfig;
 import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
-import com.megacrit.cardcrawl.cards.AbstractCard;
+import com.google.gson.Gson;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
-import com.megacrit.cardcrawl.potions.AbstractPotion;
-import com.megacrit.cardcrawl.relics.AbstractRelic;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.ProcessBuilder;
+import java.util.HashMap;
+import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import static java.lang.Thread.sleep;
 
@@ -36,21 +38,30 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
     private static final String AUTHOR = "Forgotten Arbiter";
     private static final String DESCRIPTION = "This mod communicates with an external program to play Slay the Spire.";
     public static boolean mustSendGameState = false;
-    private boolean sentGameState = false;
+
+    private static SpireConfig communicationConfig;
+    private static final String COMMAND_OPTION = "command";
+    private static final String GAME_START_OPTION = "runAtGameStart";
+    private static final String INITIALIZATION_TIMEOUT_OPTION = "maxInitializationTimeout";
+    private static final long DEFAULT_TIMEOUT = 10L;
 
     public CommunicationMod(){
         BaseMod.subscribe(this);
-        ProcessBuilder builder = new ProcessBuilder("python", "main.py");
-        File templog = new File("log.txt");
-        //builder.redirectOutput(ProcessBuilder.Redirect.appendTo(templog));
-        //builder.redirectError(ProcessBuilder.Redirect.appendTo(templog));
+
         try {
-            listener = builder.start();
+            Properties defaults = new Properties();
+            defaults.put(COMMAND_OPTION, "python main.py");
+            defaults.put(GAME_START_OPTION, Boolean.toString(true));
+            defaults.put(INITIALIZATION_TIMEOUT_OPTION, Long.toString(DEFAULT_TIMEOUT));
+            communicationConfig = new SpireConfig("CommunicationMod", "config", defaults);
+            communicationConfig.save();
         } catch (IOException e) {
-            logger.error("Could not start external process.");
             e.printStackTrace();
         }
-        startCommunicationThreads();
+
+        if(getRunOnGameStartOption()) {
+            boolean success = startExternalProcess();
+        }
     }
 
     public static void initialize() {
@@ -65,14 +76,15 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
                     GameStateConverter.registerCommandExecution();
                 }
             } catch (InvalidCommandException e) {
-                sendMessage(String.format("{\"error\": \"%s\"}", e.getMessage()));
+                HashMap<String, Object> jsonError = new HashMap<>();
+                jsonError.put("error", e.getMessage());
+                Gson gson = new Gson();
+                sendMessage(gson.toJson(jsonError));
             }
         }
     }
 
     public void receivePostInitialize() {
-        sendMessage("Initialization Completed.");
-        logger.info(readMessageBlocking());
     }
 
     public void receivePostUpdate() {
@@ -94,7 +106,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
      }
 
     private void startCommunicationThreads() {
-        writeQueue = new LinkedBlockingQueue<String>();
+        writeQueue = new LinkedBlockingQueue<>();
         writeThread = new Thread(new DataWriter(writeQueue, listener.getOutputStream()));
         writeThread.start();
         readQueue = new LinkedBlockingQueue<>();
@@ -112,15 +124,17 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
         listener.destroy();
     }
 
-    public static void sendMessage(String message) {
-        writeQueue.add(message);
+    private static void sendMessage(String message) {
+        if(writeQueue != null && writeThread.isAlive()) {
+            writeQueue.add(message);
+        }
     }
 
-    public static boolean messageAvailable() {
-        return !readQueue.isEmpty();
+    private static boolean messageAvailable() {
+        return readQueue != null && !readQueue.isEmpty();
     }
 
-    public static String readMessage() {
+    private static String readMessage() {
         if(messageAvailable()) {
             return readQueue.remove();
         } else {
@@ -128,12 +142,73 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
         }
     }
 
-    public static String readMessageBlocking() {
+    private static String readMessageBlocking() {
         try {
-            return readQueue.take();
+            return readQueue.poll(getInitializationTimeoutOption(), TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted while trying to read message from subprocess.");
         }
+    }
+
+    private static String[] getSubprocessCommand() {
+        if (communicationConfig == null) {
+            return new String[0];
+        }
+        return communicationConfig.getString(COMMAND_OPTION).trim().split("\\s+");
+    }
+
+    private static boolean getRunOnGameStartOption() {
+        if (communicationConfig == null) {
+            return false;
+        }
+        return communicationConfig.getBool(GAME_START_OPTION);
+    }
+
+    private static long getInitializationTimeoutOption() {
+        if (communicationConfig == null) {
+            return DEFAULT_TIMEOUT;
+        }
+        return (long)communicationConfig.getInt(INITIALIZATION_TIMEOUT_OPTION);
+    }
+
+    private boolean startExternalProcess() {
+        if(readThread != null) {
+            readThread.interrupt();
+        }
+        if(writeThread != null) {
+            writeThread.interrupt();
+        }
+        if(listener != null) {
+            listener.destroy();
+        }
+        // TODO: Check compatibility for non-Windows OS here:
+        ProcessBuilder builder = new ProcessBuilder(getSubprocessCommand());
+        File errorLog = new File("communication_mod_errors.log");
+        builder.redirectError(ProcessBuilder.Redirect.appendTo(errorLog));
+        try {
+            listener = builder.start();
+        } catch (IOException e) {
+            logger.error("Could not start external process.");
+            e.printStackTrace();
+        }
+        if(listener != null) {
+            startCommunicationThreads();
+            // We wait for the child process to signal it is ready before we proceed. Note that the game
+            // will hang while this is occurring. I may wish to change this behavior at a later point.
+            String message = readMessageBlocking();
+            if(message == null) {
+                // The child process waited too long to respond, so we kill it.
+                readThread.interrupt();
+                writeThread.interrupt();
+                listener.destroy();
+                logger.error("Timed out while waiting for signal from external process.");
+                return false;
+            } else {
+                logger.info(String.format("Received message from external process: %s", message));
+                return true;
+            }
+        }
+        return false;
     }
 
 }

@@ -15,7 +15,6 @@ import com.megacrit.cardcrawl.potions.AbstractPotion;
 import com.megacrit.cardcrawl.potions.PotionSlot;
 import com.megacrit.cardcrawl.random.Random;
 import com.megacrit.cardcrawl.relics.AbstractRelic;
-import com.megacrit.cardcrawl.relics.PeacePipe;
 import com.megacrit.cardcrawl.rooms.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -100,7 +99,13 @@ public class CommandExecutor {
     }
 
     public static boolean isCommandAvailable(String command) {
-        return getAvailableCommands().contains(command);
+        if(command.equals("confirm") || command.equalsIgnoreCase("proceed")) {
+            return isConfirmCommandAvailable();
+        } else if (command.equals("skip") || command.equals("cancel") || command.equals("return") || command.equals("leave")) {
+            return isCancelCommandAvailable();
+        } else {
+            return getAvailableCommands().contains(command);
+        }
     }
 
     public static boolean isInDungeon() {
@@ -109,14 +114,21 @@ public class CommandExecutor {
 
     private static boolean isPlayCommandAvailable() {
         if(isInDungeon()) {
-            return AbstractDungeon.getCurrRoom().phase == AbstractRoom.RoomPhase.COMBAT && !AbstractDungeon.isScreenUp;
-        } else {
-            return false;
+            if(AbstractDungeon.getCurrRoom().phase == AbstractRoom.RoomPhase.COMBAT && !AbstractDungeon.isScreenUp) {
+                // Play command is not available if none of the cards are playable.
+                // TODO: this does not check the case where there is no legal target for a target card.
+                for (AbstractCard card : AbstractDungeon.player.hand.group) {
+                    if (card.canUse(AbstractDungeon.player, null)) {
+                        return true;
+                    }
+                }
+            }
         }
+        return false;
     }
 
     public static boolean isEndCommandAvailable() {
-        return isPlayCommandAvailable();
+        return isInDungeon() && AbstractDungeon.getCurrRoom().phase == AbstractRoom.RoomPhase.COMBAT && !AbstractDungeon.isScreenUp;
     }
 
     public static boolean isChooseCommandAvailable() {
@@ -305,6 +317,9 @@ public class CommandExecutor {
         // Better to allow people to specify the character as "silent" rather than requiring "the_silent"
         if(tokens[1].equalsIgnoreCase("silent")) {
             selectedClass = AbstractPlayer.PlayerClass.THE_SILENT;
+        }
+        if(selectedClass == null) {
+            throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.INVALID_ARGUMENT, tokens[1]);
         }
         if(tokens.length >= 3) {
             try {

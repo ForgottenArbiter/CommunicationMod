@@ -62,7 +62,7 @@ public class ChoiceScreenUtils {
         HAND_SELECT,
         GAME_OVER,
         COMPLETE,
-        INVALID
+        NONE
     }
 
     public enum EventDialogType {
@@ -84,7 +84,7 @@ public class ChoiceScreenUtils {
                     return ChoiceType.COMPLETE;
                 }
             } else {
-                return ChoiceType.INVALID;
+                return ChoiceType.NONE;
             }
         }
         AbstractDungeon.CurrentScreen screen = AbstractDungeon.screen;
@@ -109,7 +109,7 @@ public class ChoiceScreenUtils {
             case NEOW_UNLOCK:
                 return ChoiceType.GAME_OVER;
             default:
-                return ChoiceType.INVALID;
+                return ChoiceType.NONE;
         }
     }
 
@@ -457,6 +457,9 @@ public class ChoiceScreenUtils {
 
     public static ArrayList<String> getGridScreenChoices() {
         ArrayList<String> choices = new ArrayList<>();
+        if(AbstractDungeon.gridSelectScreen.confirmScreenUp) {
+            return choices;
+        }
         for(AbstractCard card : getGridScreenCards()) {
             choices.add(card.name.toLowerCase());
         }
@@ -661,10 +664,15 @@ public class ChoiceScreenUtils {
         InputHelper.updateFirst();
     }
 
+    public static boolean bossNodeAvailable() {
+        MapRoomNode currMapNode = AbstractDungeon.getCurrMapNode();
+        return (currMapNode.y == 14 || (AbstractDungeon.id.equals(TheEnding.ID) && currMapNode.y == 2));
+    }
+
     public static ArrayList<String> getMapScreenChoices() {
         ArrayList<String> choices = new ArrayList<>();
         MapRoomNode currMapNode = AbstractDungeon.getCurrMapNode();
-        if(currMapNode.y == 14 || (AbstractDungeon.id.equals(TheEnding.ID) && currMapNode.y == 2)) {
+        if(bossNodeAvailable()) {
             choices.add("boss");
             return choices;
         }
@@ -852,8 +860,9 @@ public class ChoiceScreenUtils {
     }
 
     private static String getCampfireOptionName(AbstractCampfireOption option) {
-        String label = (String) ReflectionHacks.getPrivate(option, AbstractCampfireOption.class, "label");
-        return label.toLowerCase();
+        String classname = option.getClass().getSimpleName();
+        String nameWithoutOption = classname.substring(0, classname.length() - "Option".length());
+        return nameWithoutOption.toLowerCase();
     }
 
     private static void clickGameOverReturnButton() {
@@ -865,6 +874,5 @@ public class ChoiceScreenUtils {
         CardCrawlGame.trial = null;
         CardCrawlGame.startOver();
     }
-
 
 }
