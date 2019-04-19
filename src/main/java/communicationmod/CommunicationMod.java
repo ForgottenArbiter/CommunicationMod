@@ -1,6 +1,6 @@
 package communicationmod;
 
-import basemod.BaseMod;
+import basemod.*;
 import basemod.interfaces.PostDungeonUpdateSubscriber;
 import basemod.interfaces.PostInitializeSubscriber;
 import basemod.interfaces.PostUpdateSubscriber;
@@ -8,10 +8,15 @@ import basemod.interfaces.PreUpdateSubscriber;
 import com.evacipated.cardcrawl.modthespire.lib.SpireConfig;
 import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
 import com.google.gson.Gson;
+import com.megacrit.cardcrawl.core.CardCrawlGame;
+import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
+import com.megacrit.cardcrawl.helpers.FontHelper;
+import com.megacrit.cardcrawl.helpers.ImageMaster;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ProcessBuilder;
@@ -43,6 +48,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
     private static final String COMMAND_OPTION = "command";
     private static final String GAME_START_OPTION = "runAtGameStart";
     private static final String INITIALIZATION_TIMEOUT_OPTION = "maxInitializationTimeout";
+    private static final String DEFAULT_COMMAND = "";
     private static final long DEFAULT_TIMEOUT = 10L;
 
     public CommunicationMod(){
@@ -50,10 +56,15 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
 
         try {
             Properties defaults = new Properties();
-            defaults.put(COMMAND_OPTION, "python main.py");
-            defaults.put(GAME_START_OPTION, Boolean.toString(true));
+            defaults.put(GAME_START_OPTION, Boolean.toString(false));
             defaults.put(INITIALIZATION_TIMEOUT_OPTION, Long.toString(DEFAULT_TIMEOUT));
             communicationConfig = new SpireConfig("CommunicationMod", "config", defaults);
+            String command = communicationConfig.getString(COMMAND_OPTION);
+            // I want this to always be saved to the file so people can set it more easily.
+            if (command == null) {
+                communicationConfig.setString(COMMAND_OPTION, DEFAULT_COMMAND);
+                communicationConfig.save();
+            }
             communicationConfig.save();
         } catch (IOException e) {
             e.printStackTrace();
@@ -69,6 +80,11 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
     }
 
     public void receivePreUpdate() {
+        if(listener != null && !listener.isAlive() && writeThread != null && writeThread.isAlive()) {
+            logger.info("Child process has died...");
+            writeThread.interrupt();
+            readThread.interrupt();
+        }
         if(messageAvailable()) {
             try {
                 boolean stateChanged = CommandExecutor.executeCommand(readMessage());
@@ -85,6 +101,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
     }
 
     public void receivePostInitialize() {
+        setUpOptionsMenu();
     }
 
     public void receivePostUpdate() {
@@ -96,14 +113,70 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
             mustSendGameState = false;
         }
     }
-     public void receivePostDungeonUpdate() {
-         if (GameStateConverter.checkForDungeonStateChange()) {
-             mustSendGameState = true;
-         }
-         if(AbstractDungeon.getCurrRoom().isBattleOver) {
-             GameStateConverter.signalTurnEnd();
-         }
-     }
+
+    public void receivePostDungeonUpdate() {
+        if (GameStateConverter.checkForDungeonStateChange()) {
+            mustSendGameState = true;
+        }
+        if(AbstractDungeon.getCurrRoom().isBattleOver) {
+            GameStateConverter.signalTurnEnd();
+        }
+    }
+
+    private void setUpOptionsMenu() {
+        ModPanel settingsPanel = new ModPanel();
+        ModLabeledToggleButton gameStartOptionButton = new ModLabeledToggleButton(
+                "Start external process at game launch",
+                350, 550, Settings.CREAM_COLOR, FontHelper.charDescFont,
+                getRunOnGameStartOption(), settingsPanel, modLabel -> {},
+                modToggleButton -> {
+                    if (communicationConfig != null) {
+                        communicationConfig.setBool(GAME_START_OPTION, modToggleButton.enabled);
+                        try {
+                            communicationConfig.save();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+        settingsPanel.addUIElement(gameStartOptionButton);
+
+        ModLabel externalCommandLabel = new ModLabel(
+                "", 350, 600, Settings.CREAM_COLOR, FontHelper.charDescFont,
+                settingsPanel, modLabel -> {
+                    modLabel.text = String.format("External Process Command: %s", getSubprocessCommandString());
+                });
+        settingsPanel.addUIElement(externalCommandLabel);
+
+        ModButton startProcessButton = new ModButton(
+                350, 650, settingsPanel, modButton -> {
+                    startExternalProcess();
+                });
+        settingsPanel.addUIElement(startProcessButton);
+
+        ModLabel startProcessLabel = new ModLabel(
+                "(Re)start external process",
+                475, 700, Settings.CREAM_COLOR, FontHelper.charDescFont,
+                settingsPanel, modLabel -> {
+                    if(listener != null && listener.isAlive()) {
+                        modLabel.text = "Restart external process";
+                    } else {
+                        modLabel.text = "Start external process";
+                    }
+                });
+        settingsPanel.addUIElement(startProcessLabel);
+
+        ModButton editProcessButton = new ModButton(
+                850, 650, settingsPanel, modButton -> {});
+        settingsPanel.addUIElement(editProcessButton);
+
+        ModLabel editProcessLabel = new ModLabel(
+                "Set command (not implemented)",
+                975, 700, Settings.CREAM_COLOR, FontHelper.charDescFont,
+                settingsPanel, modLabel -> {});
+        settingsPanel.addUIElement(editProcessLabel);
+        BaseMod.registerModBadge(ImageMaster.loadImage("Icon.png"),"Communication Mod", "Forgotten Arbiter", null, settingsPanel);
+    }
 
     private void startCommunicationThreads() {
         writeQueue = new LinkedBlockingQueue<>();
@@ -121,7 +194,9 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
 
     public static void dispose() {
         logger.info("Shutting down child process...");
-        listener.destroy();
+        if(listener != null) {
+            listener.destroy();
+        }
     }
 
     private static void sendMessage(String message) {
@@ -157,6 +232,13 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
         return communicationConfig.getString(COMMAND_OPTION).trim().split("\\s+");
     }
 
+    private static String getSubprocessCommandString() {
+        if (communicationConfig == null) {
+            return "";
+        }
+        return communicationConfig.getString(COMMAND_OPTION).trim();
+    }
+
     private static boolean getRunOnGameStartOption() {
         if (communicationConfig == null) {
             return false;
@@ -180,6 +262,15 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
         }
         if(listener != null) {
             listener.destroy();
+            try {
+                boolean success = listener.waitFor(2, TimeUnit.SECONDS);
+                if (!success) {
+                    listener.destroyForcibly();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                listener.destroyForcibly();
+            }
         }
         // TODO: Check compatibility for non-Windows OS here:
         ProcessBuilder builder = new ProcessBuilder(getSubprocessCommand());
@@ -194,7 +285,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
         if(listener != null) {
             startCommunicationThreads();
             // We wait for the child process to signal it is ready before we proceed. Note that the game
-            // will hang while this is occurring. I may wish to change this behavior at a later point.
+            // will hang while this is occurring, and it will time out after a specified waiting time.
             String message = readMessageBlocking();
             if(message == null) {
                 // The child process waited too long to respond, so we kill it.
@@ -205,6 +296,9 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
                 return false;
             } else {
                 logger.info(String.format("Received message from external process: %s", message));
+                if (GameStateConverter.isWaitingForCommand()) {
+                    mustSendGameState = true;
+                }
                 return true;
             }
         }

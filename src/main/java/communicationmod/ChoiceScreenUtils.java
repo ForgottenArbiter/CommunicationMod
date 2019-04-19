@@ -30,10 +30,7 @@ import com.megacrit.cardcrawl.shop.StorePotion;
 import com.megacrit.cardcrawl.shop.StoreRelic;
 import com.megacrit.cardcrawl.ui.buttons.*;
 import com.megacrit.cardcrawl.ui.campfire.AbstractCampfireOption;
-import communicationmod.patches.GremlinMatchGamePatch;
-import communicationmod.patches.GridCardSelectScreenPatch;
-import communicationmod.patches.MapRoomNodeHoverPatch;
-import communicationmod.patches.ShopScreenPatch;
+import communicationmod.patches.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -408,15 +405,20 @@ public class ChoiceScreenUtils {
             AbstractDungeon.closeCurrentScreen();
         } else {
             AbstractCard selectedCard = AbstractDungeon.cardRewardScreen.rewardGroup.get(choice);
-            Gdx.input.setCursorPosition((int)selectedCard.hb.cX, (int)(Settings.HEIGHT - selectedCard.hb.cY));
+            //Gdx.input.setCursorPosition((int)selectedCard.hb.cX, (int)(Settings.HEIGHT - selectedCard.hb.cY));
+            CardRewardScreenPatch.doHover = true;
+            CardRewardScreenPatch.hoverCard = selectedCard;
             selectedCard.hb.clicked = true;
-            selectedCard.hb.hovered = true;
+            //selectedCard.hb.hovered = true;
         }
     }
 
     public static ArrayList<String> getHandSelectScreenChoices() {
         ArrayList<String> choices = new ArrayList<>();
         HandCardSelectScreen screen = AbstractDungeon.handCardSelectScreen;
+        if(screen.numCardsToSelect == screen.selectedCards.group.size()) {
+            return choices;
+        }
         for(AbstractCard card : AbstractDungeon.player.hand.group) {
             choices.add(card.name.toLowerCase());
         }
@@ -457,7 +459,7 @@ public class ChoiceScreenUtils {
 
     public static ArrayList<String> getGridScreenChoices() {
         ArrayList<String> choices = new ArrayList<>();
-        if(AbstractDungeon.gridSelectScreen.confirmScreenUp) {
+        if(AbstractDungeon.gridSelectScreen.confirmScreenUp || AbstractDungeon.gridSelectScreen.isJustForConfirming) {
             return choices;
         }
         for(AbstractCard card : getGridScreenCards()) {
@@ -532,7 +534,15 @@ public class ChoiceScreenUtils {
 
     public static ArrayList<String> getChestRoomChoices() {
         ArrayList<String> choices = new ArrayList<>();
-        choices.add("open");
+        AbstractChest chest = null;
+        if (AbstractDungeon.getCurrRoom() instanceof TreasureRoomBoss) {
+            chest = ((TreasureRoomBoss) AbstractDungeon.getCurrRoom()).chest;
+        } else if (AbstractDungeon.getCurrRoom() instanceof TreasureRoom) {
+            chest = ((TreasureRoom) AbstractDungeon.getCurrRoom()).chest;
+        }
+        if (chest != null && !chest.isOpen) {
+            choices.add("open");
+        }
         return choices;
     }
 
