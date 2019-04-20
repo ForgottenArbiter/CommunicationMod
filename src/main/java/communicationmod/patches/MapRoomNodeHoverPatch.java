@@ -23,9 +23,14 @@ public class MapRoomNodeHoverPatch {
             locator=Locator.class
     )
     public static void Insert(MapRoomNode _instance) {
-        if(doHover && hoverNode == _instance) {
-            _instance.hb.hovered = true;
-            doHover = false;
+
+        if(doHover) {
+            if(hoverNode == _instance) {
+                _instance.hb.hovered = true;
+                doHover = false;
+            } else {
+                _instance.hb.hovered = false;
+            }
         }
     }
 

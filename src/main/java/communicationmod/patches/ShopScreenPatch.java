@@ -1,5 +1,6 @@
 package communicationmod.patches;
 
+import basemod.ReflectionHacks;
 import com.evacipated.cardcrawl.modthespire.lib.*;
 import com.evacipated.cardcrawl.modthespire.patcher.PatchingException;
 import com.megacrit.cardcrawl.cards.AbstractCard;
@@ -36,12 +37,20 @@ public class ShopScreenPatch {
     )
     public static class HoverCardPatch {
 
+        @SuppressWarnings("unchecked")
         @SpireInsertPatch(
                 locator=Locator.class
         )
         public static void Insert(ShopScreen _instance) {
             if(doHover) {
-                hoverCard.hb.hovered = true;
+                ArrayList<AbstractCard> coloredCards = (ArrayList<AbstractCard>) ReflectionHacks.getPrivate(_instance, ShopScreen.class, "coloredCards");
+                ArrayList<AbstractCard> colorlessCards = (ArrayList<AbstractCard>) ReflectionHacks.getPrivate(_instance, ShopScreen.class, "colorlessCards");
+                for(AbstractCard card : coloredCards) {
+                    card.hb.hovered = card == hoverCard;
+                }
+                for(AbstractCard card : colorlessCards) {
+                    card.hb.hovered = card == hoverCard;
+                }
                 doHover = false;
             }
         }

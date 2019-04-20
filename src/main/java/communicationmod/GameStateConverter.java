@@ -832,7 +832,11 @@ public class GameStateConverter {
                 json_monster.put("move_id", moveInfo.nextMove);
                 json_monster.put("move_base_damage", moveInfo.baseDamage);
                 int intentDmg = (int)ReflectionHacks.getPrivate(monster, AbstractMonster.class, "intentDmg");
-                json_monster.put("move_adjusted_damage", intentDmg);
+                if (moveInfo.baseDamage > 0) {
+                    json_monster.put("move_adjusted_damage", intentDmg);
+                } else {
+                    json_monster.put("move_adjusted_damage", moveInfo.baseDamage);
+                }
                 int move_hits = moveInfo.multiplier;
                 // If isMultiDamage is not set, the multiplier is probably 0, but there is really 1 attack.
                 if (!moveInfo.isMultiDamage) {

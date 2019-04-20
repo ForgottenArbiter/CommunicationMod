@@ -94,6 +94,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
             } catch (InvalidCommandException e) {
                 HashMap<String, Object> jsonError = new HashMap<>();
                 jsonError.put("error", e.getMessage());
+                jsonError.put("ready_for_command", GameStateConverter.isWaitingForCommand());
                 Gson gson = new Gson();
                 sendMessage(gson.toJson(jsonError));
             }

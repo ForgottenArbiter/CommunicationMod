@@ -565,9 +565,7 @@ public class ChoiceScreenUtils {
     }
 
     public static void makeShopRoomChoice (int choice) {
-        Merchant merchant = ((ShopRoom)AbstractDungeon.getCurrRoom()).merchant;
-        setCursorPosition(merchant.hb.cX, Settings.HEIGHT - merchant.hb.cY);
-        InputHelper.justClickedLeft = true;
+        MerchantPatch.visitMerchant = true;
     }
 
     public static ArrayList<String> getShopScreenChoices() {
