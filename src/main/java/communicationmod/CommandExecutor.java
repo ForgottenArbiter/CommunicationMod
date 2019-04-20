@@ -359,6 +359,7 @@ public class CommandExecutor {
         CharacterManager manager = new CharacterManager();
         manager.setChosenCharacter(selectedClass);
         CardCrawlGame.chosenCharacter = selectedClass;
+        GameStateConverter.resetStateVariables();
     }
 
     private static int getValidChoiceIndex(String[] tokens, ArrayList<String> validChoices) throws InvalidCommandException {

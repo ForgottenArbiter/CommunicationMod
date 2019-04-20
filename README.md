@@ -69,11 +69,11 @@ CommunicationMod launches a specified process and communicates with this process
 ## Known issues and limitations, to be hopefully fixed soon:
 - The full state of the Match and Keep event is not transmitted.
 - There is no feedback or state change if you attempt to take or buy a potion while your potion inventory is full. Beware!
-- Very rarely, the game will fail to execute a choose action and will get stuck. I have tried to fix as many of these as possible, but have observed it happening in some events.
 - Unselecting cards in hand select screens is not supported.
 - Several actions do not currently register a state change if they are performed manually in game.
 - You must manually edit the mod's config file to set the command for your external process.
-- This mod has only been tested on Windows 10 at this point.
+- Communication Mod has only been tested on Windows 10 at this point.
+- Communication Mod has not been tested without fast mode on.
 
 ## What are some of the potential applications of this mod?
 

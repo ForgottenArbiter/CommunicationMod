@@ -48,6 +48,7 @@ public class GameStateConverter {
     private static boolean blocked = false;
     private static boolean waitingForCommand = false;
     private static boolean hasPresentedOutOfGameState = false;
+    private static boolean waitOneUpdate = false;
 
     /**
      * Used to indicate that something (in game logic, not external command) has been done that will change the game state,
@@ -92,6 +93,21 @@ public class GameStateConverter {
      */
     public static void signalTurnEnd() {
         myTurn = false;
+    }
+
+    /**
+     * Resets all state detection variables for the start of a new run.
+     */
+    public static void resetStateVariables() {
+         previousScreen = null;
+         previousScreenUp = false;
+         previousPhase = null;
+         previousGold = 99;
+         externalChange = false;
+         myTurn = false;
+         blocked = false;
+         waitingForCommand = false;
+         waitOneUpdate = false;
     }
 
     /**
@@ -148,10 +164,17 @@ public class GameStateConverter {
                     return true;
                 }
 
-            // Out of combat, there is nothing to wait for. We just indicate the state change right away.
+            // Out of combat, we want to wait one update cycle, as some screen transitions trigger further updates.
             } else {
-                return true;
+                waitOneUpdate = true;
+                previousScreenUp = newScreenUp;
+                previousScreen = newScreen;
+                previousPhase = newPhase;
+                return false;
             }
+        } else if (waitOneUpdate) {
+            waitOneUpdate = false;
+            return true;
         }
         // We are assuming that commands are only being submitted through our interface. Some actions that require
         // our attention, like retaining a card, occur after the end turn is queued, but the previous cases
