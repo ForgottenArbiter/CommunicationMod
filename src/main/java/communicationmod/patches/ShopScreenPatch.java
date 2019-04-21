@@ -4,9 +4,8 @@ import basemod.ReflectionHacks;
 import com.evacipated.cardcrawl.modthespire.lib.*;
 import com.evacipated.cardcrawl.modthespire.patcher.PatchingException;
 import com.megacrit.cardcrawl.cards.AbstractCard;
-import com.megacrit.cardcrawl.helpers.Hitbox;
 import com.megacrit.cardcrawl.shop.ShopScreen;
-import communicationmod.GameStateConverter;
+import communicationmod.GameStateListener;
 import javassist.CannotCompileException;
 import javassist.CtBehavior;
 
@@ -25,7 +24,7 @@ public class ShopScreenPatch {
     public static class PurgeCardPatch {
 
         public static void Postfix() {
-            GameStateConverter.resumeStateUpdate();  // Needed to wait for the rest of the logic to complete after card was selected.
+            GameStateListener.resumeStateUpdate();  // Needed to wait for the rest of the logic to complete after card was selected.
         }
 
     }

@@ -6,7 +6,7 @@ import com.evacipated.cardcrawl.modthespire.patcher.PatchingException;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.cards.CardGroup;
 import com.megacrit.cardcrawl.events.shrines.GremlinMatchGame;
-import communicationmod.GameStateConverter;
+import communicationmod.GameStateListener;
 import javassist.CannotCompileException;
 import javassist.CtBehavior;
 
@@ -55,7 +55,7 @@ public class GremlinMatchGamePatch {
             // We have to wait for the cards to flip or everything goes wrong. Nothing else detects this change.
             int attemptCount = (int) ReflectionHacks.getPrivate(_instance, GremlinMatchGame.class, "attemptCount");
             if(attemptCount > 0) {
-                GameStateConverter.registerStateChange();
+                GameStateListener.registerStateChange();
             }
         }
 
@@ -80,7 +80,7 @@ public class GremlinMatchGamePatch {
                 locator=Locator.class
         )
         public static void Insert(GremlinMatchGame _instance) {
-            GameStateConverter.registerStateChange();
+            GameStateListener.registerStateChange();
         }
 
         /*

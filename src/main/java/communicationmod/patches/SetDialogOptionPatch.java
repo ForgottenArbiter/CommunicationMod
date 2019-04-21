@@ -2,7 +2,7 @@ package communicationmod.patches;
 
 import com.evacipated.cardcrawl.modthespire.lib.SpirePatch;
 import com.megacrit.cardcrawl.events.GenericEventDialog;
-import communicationmod.GameStateConverter;
+import communicationmod.GameStateListener;
 
 @SpirePatch(
         clz= GenericEventDialog.class,
@@ -11,6 +11,6 @@ import communicationmod.GameStateConverter;
 )
 public class SetDialogOptionPatch {
     public static void Postfix(GenericEventDialog _instance, String _arg) {
-        GameStateConverter.registerStateChange();
+        GameStateListener.registerStateChange();
     }
 }

@@ -2,9 +2,9 @@ package communicationmod.patches;
 
 import com.megacrit.cardcrawl.rewards.RewardItem;
 import com.megacrit.cardcrawl.screens.CombatRewardScreen;
-import communicationmod.GameStateConverter;
 import com.evacipated.cardcrawl.modthespire.lib.*;
 import com.evacipated.cardcrawl.modthespire.patcher.PatchingException;
+import communicationmod.GameStateListener;
 import javassist.CannotCompileException;
 import javassist.CtBehavior;
 
@@ -27,7 +27,7 @@ public class CombatRewardScreenPatch {
                 return;
             }
         }
-        GameStateConverter.registerStateChange();
+        GameStateListener.registerStateChange();
     }
 
     private static class Locator extends SpireInsertLocator {

@@ -4,7 +4,7 @@ import com.evacipated.cardcrawl.modthespire.lib.*;
 import com.evacipated.cardcrawl.modthespire.patcher.PatchingException;
 import com.megacrit.cardcrawl.metrics.MetricData;
 import com.megacrit.cardcrawl.vfx.campfire.CampfireTokeEffect;
-import communicationmod.GameStateConverter;
+import communicationmod.GameStateListener;
 import javassist.CannotCompileException;
 import javassist.CtBehavior;
 
@@ -20,7 +20,7 @@ public class CampfireTokeEffectPatch {
             locator=LocatorAfter.class
     )
     public static void After(CampfireTokeEffect _instance) {
-        GameStateConverter.resumeStateUpdate();
+        GameStateListener.resumeStateUpdate();
     }
 
     private static class LocatorAfter extends SpireInsertLocator {
@@ -34,7 +34,7 @@ public class CampfireTokeEffectPatch {
             locator=LocatorBefore.class
     )
     public static void Before(CampfireTokeEffect _instance) {
-        GameStateConverter.blockStateUpdate();
+        GameStateListener.blockStateUpdate();
     }
 
     private static class LocatorBefore extends SpireInsertLocator {

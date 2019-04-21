@@ -8,7 +8,6 @@ import basemod.interfaces.PreUpdateSubscriber;
 import com.evacipated.cardcrawl.modthespire.lib.SpireConfig;
 import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
 import com.google.gson.Gson;
-import com.megacrit.cardcrawl.core.CardCrawlGame;
 import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.helpers.FontHelper;
@@ -16,7 +15,6 @@ import com.megacrit.cardcrawl.helpers.ImageMaster;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ProcessBuilder;
@@ -89,12 +87,12 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
             try {
                 boolean stateChanged = CommandExecutor.executeCommand(readMessage());
                 if(stateChanged) {
-                    GameStateConverter.registerCommandExecution();
+                    GameStateListener.registerCommandExecution();
                 }
             } catch (InvalidCommandException e) {
                 HashMap<String, Object> jsonError = new HashMap<>();
                 jsonError.put("error", e.getMessage());
-                jsonError.put("ready_for_command", GameStateConverter.isWaitingForCommand());
+                jsonError.put("ready_for_command", GameStateListener.isWaitingForCommand());
                 Gson gson = new Gson();
                 sendMessage(gson.toJson(jsonError));
             }
@@ -106,7 +104,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
     }
 
     public void receivePostUpdate() {
-        if(!mustSendGameState && GameStateConverter.checkForMenuStateChange()) {
+        if(!mustSendGameState && GameStateListener.checkForMenuStateChange()) {
             mustSendGameState = true;
         }
         if(mustSendGameState) {
@@ -116,11 +114,11 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
     }
 
     public void receivePostDungeonUpdate() {
-        if (GameStateConverter.checkForDungeonStateChange()) {
+        if (GameStateListener.checkForDungeonStateChange()) {
             mustSendGameState = true;
         }
         if(AbstractDungeon.getCurrRoom().isBattleOver) {
-            GameStateConverter.signalTurnEnd();
+            GameStateListener.signalTurnEnd();
         }
     }
 
@@ -297,7 +295,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
                 return false;
             } else {
                 logger.info(String.format("Received message from external process: %s", message));
-                if (GameStateConverter.isWaitingForCommand()) {
+                if (GameStateListener.isWaitingForCommand()) {
                     mustSendGameState = true;
                 }
                 return true;

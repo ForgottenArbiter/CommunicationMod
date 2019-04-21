@@ -3,7 +3,7 @@ package communicationmod.patches;
 import com.evacipated.cardcrawl.modthespire.lib.*;
 import com.evacipated.cardcrawl.modthespire.patcher.PatchingException;
 import com.megacrit.cardcrawl.events.GenericEventDialog;
-import communicationmod.GameStateConverter;
+import communicationmod.GameStateListener;
 import javassist.CannotCompileException;
 import javassist.CtBehavior;
 
@@ -20,7 +20,7 @@ public class GenericEventDialogPatch {
             locator=Locator.class
     )
     public static void Insert(GenericEventDialog _instance) {
-        GameStateConverter.registerStateChange();
+        GameStateListener.registerStateChange();
     }
 
     private static class Locator extends SpireInsertLocator {

@@ -1,6 +1,5 @@
 package communicationmod;
 
-import com.brashmonkey.spriter.Player;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.cards.CardQueueItem;
 import com.megacrit.cardcrawl.characters.AbstractPlayer;
@@ -290,7 +289,7 @@ public class CommandExecutor {
             }
         }
         AbstractDungeon.topPanel.destroyPotion(selectedPotion.slot);
-        GameStateConverter.registerStateChange();
+        GameStateListener.registerStateChange();
     }
 
     private static void executeConfirmCommand() {
@@ -359,7 +358,7 @@ public class CommandExecutor {
         CharacterManager manager = new CharacterManager();
         manager.setChosenCharacter(selectedClass);
         CardCrawlGame.chosenCharacter = selectedClass;
-        GameStateConverter.resetStateVariables();
+        GameStateListener.resetStateVariables();
     }
 
     private static int getValidChoiceIndex(String[] tokens, ArrayList<String> validChoices) throws InvalidCommandException {

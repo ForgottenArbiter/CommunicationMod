@@ -24,7 +24,6 @@ import com.megacrit.cardcrawl.rooms.*;
 import com.megacrit.cardcrawl.screens.CardRewardScreen;
 import com.megacrit.cardcrawl.screens.select.GridCardSelectScreen;
 import com.megacrit.cardcrawl.screens.select.HandCardSelectScreen;
-import com.megacrit.cardcrawl.shop.Merchant;
 import com.megacrit.cardcrawl.shop.ShopScreen;
 import com.megacrit.cardcrawl.shop.StorePotion;
 import com.megacrit.cardcrawl.shop.StoreRelic;
@@ -479,7 +478,7 @@ public class ChoiceScreenUtils {
         screen.confirmButton.hb.clicked = true;
         if (AbstractDungeon.previousScreen == AbstractDungeon.CurrentScreen.SHOP) {
             // The rest of the associated shop purge logic will not run in this update, so we need to block until it does.
-            GameStateConverter.blockStateUpdate();
+            GameStateListener.blockStateUpdate();
         }
     }
 

@@ -2,11 +2,9 @@ package communicationmod.patches;
 
 import com.evacipated.cardcrawl.modthespire.lib.*;
 import com.evacipated.cardcrawl.modthespire.patcher.PatchingException;
-import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.helpers.Hitbox;
 import com.megacrit.cardcrawl.screens.select.GridCardSelectScreen;
-import com.megacrit.cardcrawl.shop.ShopScreen;
-import communicationmod.GameStateConverter;
+import communicationmod.GameStateListener;
 import javassist.CannotCompileException;
 import javassist.CtBehavior;
 
@@ -24,7 +22,7 @@ public class GridCardSelectScreenUpdatePatch {
             locator=Locator.class
     )
     public static void Insert(GridCardSelectScreen _instance) {
-        GameStateConverter.registerStateChange();
+        GameStateListener.registerStateChange();
     }
 
     private static class Locator extends SpireInsertLocator {

@@ -3,7 +3,7 @@ package communicationmod.patches;
 import com.evacipated.cardcrawl.modthespire.lib.*;
 import com.evacipated.cardcrawl.modthespire.patcher.PatchingException;
 import com.megacrit.cardcrawl.vfx.campfire.CampfireSleepEffect;
-import communicationmod.GameStateConverter;
+import communicationmod.GameStateListener;
 import javassist.CannotCompileException;
 import javassist.CtBehavior;
 
@@ -19,7 +19,7 @@ public class CampfireSleepEffectPatch {
             locator=Locator.class
     )
     public static void Insert(CampfireSleepEffect _instance) {
-        GameStateConverter.resumeStateUpdate();
+        GameStateListener.resumeStateUpdate();
     }
 
     private static class Locator extends SpireInsertLocator {

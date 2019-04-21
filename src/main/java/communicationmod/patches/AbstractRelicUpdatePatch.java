@@ -1,10 +1,9 @@
 package communicationmod.patches;
 
 import com.megacrit.cardcrawl.relics.AbstractRelic;
-import communicationmod.GameStateConverter;
 import com.evacipated.cardcrawl.modthespire.lib.*;
 import com.evacipated.cardcrawl.modthespire.patcher.PatchingException;
-import com.megacrit.cardcrawl.helpers.Hitbox;
+import communicationmod.GameStateListener;
 import javassist.CannotCompileException;
 import javassist.CtBehavior;
 
@@ -24,7 +23,7 @@ public class AbstractRelicUpdatePatch {
         // To avoid problems, we cannot report a state update until this happens.
         if(_instance.isObtained) {
             System.out.println("blocking state update...");
-            GameStateConverter.blockStateUpdate();
+            GameStateListener.blockStateUpdate();
         }
     }
 
@@ -41,7 +40,7 @@ public class AbstractRelicUpdatePatch {
             locator=EquipLocator.class
     )
     public static void ResumeStateChange(AbstractRelic _instance) {
-        GameStateConverter.resumeStateUpdate();
+        GameStateListener.resumeStateUpdate();
     }
 
     private static class EquipLocator extends SpireInsertLocator {
