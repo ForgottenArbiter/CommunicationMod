@@ -5,10 +5,10 @@
 
     <groupId>autoplay</groupId>
     <artifactId>CommunicationMod</artifactId>
-    <version>0.1.0</version>
+    <version>0.3.0</version>
     <packaging>jar</packaging>
     <name>Communication Mod</name>
-    <description>Communicates information needed to play Slay the Spire automatically</description>
+    <description>Communicates with another process to Slay the Spire automatically</description>
 
     <dependencies>
         <dependency>

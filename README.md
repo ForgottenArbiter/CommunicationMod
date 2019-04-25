@@ -74,7 +74,7 @@ CommunicationMod launches a specified process and communicates with this process
 - You must manually edit the mod's config file to set the command for your external process.
 - Communication Mod has only been tested on Windows 10 at this point.
 - Communication Mod has not been tested without fast mode on.
-- Some of the commands will currently hijack your mouse cursor, though I have gradually been replacing those implementations.
+- Some of the commands will currently hijack your mouse cursor, though the hijacking of your mouse will go away.
 
 ## What are some of the potential applications of this mod?
 

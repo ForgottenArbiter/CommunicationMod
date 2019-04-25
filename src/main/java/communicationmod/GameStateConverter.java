@@ -38,10 +38,10 @@ public class GameStateConverter {
     /**
      * Creates a JSON representation of the status of CommunicationMod that will be sent to the external process.
      * The JSON object returned contains:
-     * - "available_commands": A list of commands (Strings) available to the user (list)
-     * - "ready_for_command": Denotes whether the game state is stable and ready to receive a command (boolean)
-     * - "in_game": True if in the main menu, False if the player is in the dungeon (boolean)
-     * - "game_state": Present if in_game=True, contains the game state object returned by getGameState() (object)
+     * - "available_commands" (list): A list of commands (strings) available to the user
+     * - "ready_for_command" (boolean): Denotes whether the game state is stable and ready to receive a command
+     * - "in_game" (boolean): True if in the main menu, False if the player is in the dungeon
+     * - "game_state" (object): Present if in_game=True, contains the game state object returned by getGameState()
      * @return A string containing the JSON representation of CommunicationMod's status
      */
     public static String getCommunicationState() {
@@ -61,29 +61,29 @@ public class GameStateConverter {
     /**
      * Creates a JSON representation of the game state, which will be sent to the client.
      * Always present:
-     * - "screen_name": The name of the Enum representing the current screen (defined by Mega Crit) (string)
-     * - "is_screen_up": The game's isScreenUp variable (boolean)
-     * - "screen_type": The type of screen (or decision) that the user if facing (defined by Communication Mod) (string)
-     * - "screen_state": The state of the current state, see getScreenState() (as defined by Communication Mod) (object)
-     * - "room_phase": The phase of the current room (COMBAT, EVENT, etc.) (string)
-     * - "action_phase": The phase of the action manager (WAITING_FOR_USER_INPUT, EXECUTING_ACTIONS) (string)
-     * - "room_type": The name of the class of the current room (ShopRoom, TreasureRoom, MonsterRoom, etc.) (string)
-     * - "current_hp": The player's current hp (int)
-     * - "max_hp": The player's maximum hp (int)
-     * - "floor": The current floor number (int)
-     * - "act": The current act number (int)
-     * - "gold": The player's current gold total (int)
-     * - "seed": The seed used by the current game (long)
-     * - "class": The player's current class (string)
-     * - "ascension_level": The ascension level of the current run (int)
-     * - "relics": A list of the player's current relics (list)
-     * - "deck": A list of the cards in the player's deck (list)
-     * - "potions": A list of the player's potions (empty slots are PotionSlots) (list)
-     * - "map": The current dungeon map (list)
+     * - "screen_name" (string): The name of the Enum representing the current screen (defined by Mega Crit)
+     * - "is_screen_up" (boolean): The game's isScreenUp variable
+     * - "screen_type" (string): The type of screen (or decision) that the user if facing (defined by Communication Mod)
+     * - "screen_state" (object): The state of the current state, see getScreenState() (as defined by Communication Mod)
+     * - "room_phase" (string): The phase of the current room (COMBAT, EVENT, etc.)
+     * - "action_phase" (string): The phase of the action manager (WAITING_FOR_USER_INPUT, EXECUTING_ACTIONS)
+     * - "room_type" (string): The name of the class of the current room (ShopRoom, TreasureRoom, MonsterRoom, etc.)
+     * - "current_hp" (int): The player's current hp
+     * - "max_hp" (int): The player's maximum hp
+     * - "floor" (int): The current floor number
+     * - "act" (int): The current act number
+     * - "gold" (int): The player's current gold total
+     * - "seed" (long): The seed used by the current game
+     * - "class" (string): The player's current class
+     * - "ascension_level" (int): The ascension level of the current run
+     * - "relics" (list): A list of the player's current relics
+     * - "deck" (list): A list of the cards in the player's deck
+     * - "potions" (list): A list of the player's potions (empty slots are PotionSlots)
+     * - "map" (list): The current dungeon map
      * Sometimes present:
-     * - "current_action": The class name of the action in the action manager queue, if not empty (list)
-     * - "combat_state": The state of the combat (draw pile, monsters, etc.) (object)
-     * - "choice_list": If the command is available, the possible choices for the choose command (list)
+     * - "current_action" (list): The class name of the action in the action manager queue, if not empty
+     * - "combat_state" (list): The state of the combat (draw pile, monsters, etc.)
+     * - "choice_list" (list): If the command is available, the possible choices for the choose command
      * @return A HashMap encoding the JSON representation of the game state
      */
     private static HashMap<String, Object> getGameState() {
@@ -169,14 +169,14 @@ public class GameStateConverter {
 
     /**
      * The event state object contains:
-     * "body_text": The current body text for the event, or an empty string if there is none (string)
-     * "event_name": The name of the event, in the current language (string)
-     * "event_id": The ID of the event (NOTE: This implementation is sketchy and may not play nice with mods) (string)
-     * "options": A list of options, in the order they are presented in game. Each option contains:
-     * - "text": The full text associated with the option (Eg. "[Banana] Heal 10 hp") (string)
-     * - "disabled": Whether the current option or button is disabled. Disabled buttons cannot be chosen (boolean)
-     * - "label": The simple label of a button or option (Eg. "Banana") (string)
-     * - "choice_index": The index of the option for the choose command, if applicable (int)
+     * "body_text" (string): The current body text for the event, or an empty string if there is none
+     * "event_name" (string): The name of the event, in the current language
+     * "event_id" (string): The ID of the event (NOTE: This implementation is sketchy and may not play nice with mods)
+     * "options" (list): A list of options, in the order they are presented in game. Each option contains:
+     * - "text" (string): The full text associated with the option (Eg. "[Banana] Heal 10 hp")
+     * - "disabled" (boolean): Whether the current option or button is disabled. Disabled buttons cannot be chosen
+     * - "label" (string): The simple label of a button or option (Eg. "Banana")
+     * - "choice_index" (int): The index of the option for the choose command, if applicable
      * @return The event state object
      */
     private static HashMap<String, Object> getEventState() {
@@ -229,9 +229,9 @@ public class GameStateConverter {
 
     /**
      * The card reward state object contains:
-     * "bowl_available": Whether the Singing Bowl button is present (boolean)
-     * "skip_available": Whether the card reward is skippable (boolean)
-     * "cards": The list of cards that can be chosen (list)
+     * "bowl_available" (boolean): Whether the Singing Bowl button is present
+     * "skip_available" (boolean): Whether the card reward is skippable
+     * "cards" (list): The list of cards that can be chosen
      * @return The card reward state object
      */
     private static HashMap<String, Object> getCardRewardState() {
@@ -248,12 +248,12 @@ public class GameStateConverter {
 
     /**
      * The combat reward screen state object contains:
-     * "rewards": A list of reward objects, each of which contains:
-     * - "reward_type": The name of the RewardItem.RewardType enum for the reward (string)
-     * - "gold": The amount of gold in the reward, if applicable (int)
-     * - "relic": The relic in the reward, if applicable (object)
-     * - "potion": The potion in the reward, if applicable (object)
-     * - "link": The relic that the sapphire key is linked to, if applicable (object)
+     * "rewards" (list): A list of reward objects, each of which contains:
+     * - "reward_type" (string): The name of the RewardItem.RewardType enum for the reward
+     * - "gold" (int): The amount of gold in the reward, if applicable
+     * - "relic" (object): The relic in the reward, if applicable
+     * - "potion" (object): The potion in the reward, if applicable
+     * - "link" (object): The relic that the sapphire key is linked to, if applicable
      * @return The combat reward screen state object
      */
     private static HashMap<String, Object> getCombatRewardState() {
@@ -284,10 +284,10 @@ public class GameStateConverter {
 
     /**
      * The map screen state object contains:
-     * "current_node": The node object for the currently selected node, if applicable (object)
-     * "next_nodes": A list of nodes that can be chosen next (list)
-     * "first_node_chosen": Whether the first node in the act has already been chosen (boolean)
-     * "boss_available": Whether the next node choice is a boss (boolean)
+     * "current_node" (object): The node object for the currently selected node, if applicable
+     * "next_nodes" (list): A list of nodes that can be chosen next
+     * "first_node_chosen" (boolean): Whether the first node in the act has already been chosen
+     * "boss_available" (boolean): Whether the next node choice is a boss
      * @return The map screen state object
      */
     private static HashMap<String, Object> getMapScreenState() {
@@ -307,7 +307,7 @@ public class GameStateConverter {
 
     /**
      * The boss reward screen state contains:
-     * "relics": A list of relics that can be chosen from the boss (list)
+     * "relics" (list): A list of relics that can be chosen from the boss
      * Note: Blights are not supported.
      * @return The boss reward screen state object
      */
@@ -323,11 +323,11 @@ public class GameStateConverter {
 
     /**
      * The shop screen state contains:
-     * "cards": A list of cards available to buy (list)
-     * "relics": A list of relics available to buy (list)
-     * "potions": A list of potions available to buy (list)
-     * "purge_available": Whether the card remove option is available (boolean)
-     * "purge_cost": The cost of the card remove option (int)
+     * "cards" (list): A list of cards available to buy
+     * "relics" (list): A list of relics available to buy
+     * "potions" (list): A list of potions available to buy
+     * "purge_available" (boolean): Whether the card remove option is available
+     * "purge_cost" (int): The cost of the card remove option
      * @return The shop screen state object
      */
     private static HashMap<String, Object> getShopScreenState() {
@@ -360,13 +360,13 @@ public class GameStateConverter {
 
     /**
      * The grid select screen state contains:
-     * "cards": The list of cards available to pick, including selected cards (list)
-     * "selected_cards": The list of cards that are currently selected (list)
-     * "num_cards": The number of cards that must be selected (int)
-     * "for_upgrade": Whether the selected cards will be upgraded (boolean)
-     * "for_transform": Whether the selected cards will be transformed (boolean)
-     * _for_purge": Whether the selected cards will be removed from the deck (boolean)
-     * "confirm_up": Whether the confirm screen is up, and cards cannot be selected (boolean)
+     * "cards" (list): The list of cards available to pick, including selected cards
+     * "selected_cards" (list): The list of cards that are currently selected
+     * "num_cards" (int): The number of cards that must be selected
+     * "for_upgrade" (boolean): Whether the selected cards will be upgraded
+     * "for_transform" (boolean): Whether the selected cards will be transformed
+     * _for_purge" (boolean): Whether the selected cards will be removed from the deck
+     * "confirm_up" (boolean): Whether the confirm screen is up, and cards cannot be selected
      * @return The grid select screen state object
      */
     private static HashMap<String, Object> getGridState() {
@@ -397,10 +397,10 @@ public class GameStateConverter {
 
     /**
      * The hand select screen state contains:
-     * "hand": The list of cards currently in your hand, not including selected cards (list)
-     * "selected": The list of currently selected cards (list)
-     * "max_cards": The maximum number of cards that can be selected (int)
-     * "can_pick_zero": Whether zero cards can be selected (boolean)
+     * "hand" (list): The list of cards currently in your hand, not including selected cards
+     * "selected" (list): The list of currently selected cards
+     * "max_cards" (int): The maximum number of cards that can be selected
+     * "can_pick_zero" (boolean): Whether zero cards can be selected
      * @return The hand select screen state object
      */
     private static HashMap<String, Object> getHandSelectState() {
@@ -426,8 +426,8 @@ public class GameStateConverter {
 
     /**
      * The game over screen state contains:
-     * "score": Your final score (int)
-     * "victory": Whether you won (boolean)
+     * "score" (int): Your final score
+     * "victory" (boolean): Whether you won
      * @return The game over screen state object
      */
     private static HashMap<String, Object> getGameOverState() {
@@ -481,12 +481,12 @@ public class GameStateConverter {
     /**
      * Gets the state of the current combat in game.
      * The combat state object contains:
-     * "draw_pile": The list of cards in your draw pile (list)
-     * "discard_pile": The list of cards in your discard pile (list)
-     * "exhaust_pile": The list of cards in your exhaust pile (list)
-     * "hand": The list of cards in your hand (list)
-     * "player": The state of the player (object)
-     * "monsters": A list of the enemies in the combat, including dead enemies (list)
+     * "draw_pile" (list): The list of cards in your draw pile
+     * "discard_pile" (list): The list of cards in your discard pile
+     * "exhaust_pile" (list): The list of cards in your exhaust pile
+     * "hand" (list): The list of cards in your hand
+     * "player" (object): The state of the player
+     * "monsters" (list): A list of the enemies in the combat, including dead enemies
      * Note: The order of the draw pile is not currently randomized when sent to the client.
      * @return The combat state object
      */
@@ -524,8 +524,8 @@ public class GameStateConverter {
     /**
      * Creates a GSON-compatible representation of the game map
      * The map object is a list of nodes, each of which with two extra fields:
-     * "parents": Not implemented (list)
-     * "children": The nodes connected by an edge out of the node in question (list)
+     * "parents" (list): Not implemented
+     * "children" (list): The nodes connected by an edge out of the node in question
      * @return A list of node objects
      */
     private static ArrayList<Object> convertMapToJson() {
@@ -564,10 +564,10 @@ public class GameStateConverter {
     /**
      * Creates a GSON-compatible representation of the given node
      * The node object contains:
-     * "x": The node's x coordinate (int)
-     * "y": The node's y coordinate (int)
-     * "symbol": The map symbol for the node (?, $, T, M, E, R) (string, optional)
-     * "children": The nodes connected by an edge out of the provided node (list, optional)
+     * "x" (int): The node's x coordinate
+     * "y" (int): The node's y coordinate
+     * "symbol" (string, optional): The map symbol for the node (?, $, T, M, E, R)
+     * "children" (list, optional): The nodes connected by an edge out of the provided node
      * Note: children are added by convertMapToJson()
      * @param node The node to convert
      * @return A node object
@@ -581,17 +581,17 @@ public class GameStateConverter {
     /**
      * Creates a GSON-compatible representation of the given cards
      * The card object contains:
-     * "name": The name of the card, in the currently selected language (string)
-     * "uuid": The unique identifier of the card (string)
-     * "misc": The misc field for the card, used by cards like Ritual Dagger (int)
-     * "is_playable": Whether the card can currently be played, though does not guarantee a target (boolean)
-     * "cost": The current cost of the card. -2 is unplayable and -1 is X cost (int)
-     * "upgrades": The number of times the card is upgraded (int)
-     * "id": The id of the card (string)
-     * "type": The name of the AbstractCard.CardType enum for the card (string)
-     * "rarity": The name of the AbstractCard.CardRarity enum for the card (string)
-     * "has_target": Whether the card requires a target to be played (boolean)
-     * "exhausts": Whether the card exhausts when played (boolean)
+     * "name" (string): The name of the card, in the currently selected language
+     * "uuid" (string): The unique identifier of the card
+     * "misc" (int): The misc field for the card, used by cards like Ritual Dagger
+     * "is_playable" (boolean): Whether the card can currently be played, though does not guarantee a target
+     * "cost" (int): The current cost of the card. -2 is unplayable and -1 is X cost
+     * "upgrades" (int): The number of times the card is upgraded
+     * "id" (string): The id of the card
+     * "type" (string): The name of the AbstractCard.CardType enum for the card
+     * "rarity" (string): The name of the AbstractCard.CardRarity enum for the card
+     * "has_target" (boolean): Whether the card requires a target to be played
+     * "exhausts" (boolean): Whether the card exhausts when played
      * @param card The card to convert
      * @return A card object
      */
@@ -618,19 +618,19 @@ public class GameStateConverter {
     /**
      * Creates a GSON-compatible representation of the given monster
      * The monster object contains:
-     * "name": The monster's name, in the currently selected language (string)
-     * "id": The monster's id (string)
-     * "current_hp": The monster's current hp (int)
-     * "max_hp": The monster's maximum hp (int)
-     * "block": The monster's current block
-     * "intent": The name of the AbstractMonster.Intent enum for the monster's current intent (string)
-     * "move_id": The move id byte for the monster's current move (int)
-     * "move_base_damage": The base damage for the monster's current attack (int)
-     * "move_adjusted_damage": The damage number actually shown on the intent for the monster's current attack (int)
-     * "move_hits": The number of hits done by the current attack (int)
-     * "half_dead": Whether the monster is half dead (boolean)
-     * "is_gone": Whether the monster is dead or has run away (boolean)
-     * "powers": The monster's current powers (list)
+     * "name" (string): The monster's name, in the currently selected language
+     * "id" (string): The monster's id
+     * "current_hp" (int): The monster's current hp
+     * "max_hp" (int): The monster's maximum hp
+     * "block" (int): The monster's current block
+     * "intent" (string): The name of the AbstractMonster.Intent enum for the monster's current intent
+     * "move_id" (int): The move id byte for the monster's current move
+     * "move_base_damage" (int): The base damage for the monster's current attack
+     * "move_adjusted_damage" (int): The damage number actually shown on the intent for the monster's current attack
+     * "move_hits" (int): The number of hits done by the current attack
+     * "half_dead" (boolean): Whether the monster is half dead
+     * "is_gone" (boolean): Whether the monster is dead or has run away
+     * "powers" (list): The monster's current powers
      * Note: If the player has Runic Dome, intent will always return NONE
      * @param monster The monster to convert
      * @return A monster object
@@ -673,11 +673,11 @@ public class GameStateConverter {
     /**
      * Creates a GSON-compatible representation of the given player
      * The player object contains:
-     * "max_hp": The player's maximum hp (int)
-     * "current_hp": The player's current hp (int)
-     * "block": The player's current block (int)
-     * "powers": The player's current powers (list)
-     * "energy": The player's current energy (int)
+     * "max_hp" (int): The player's maximum hp
+     * "current_hp" (int): The player's current hp
+     * "block" (int): The player's current block
+     * "powers" (list): The player's current powers
+     * "energy" (int): The player's current energy
      * Note: many other things, like draw pile and discard pile, are in the combat state
      * @param player The player to convert
      * @return A player object
@@ -695,9 +695,9 @@ public class GameStateConverter {
     /**
      * Creates a GSON-compatible representation of the given creature's powers
      * The power object contains:
-     * "id": The id of the power (string)
-     * "name": The name of the power, in the currently selected language (string)
-     * "amount": The amount of the power (int)
+     * "id" (string): The id of the power
+     * "name" (string): The name of the power, in the currently selected language
+     * "amount" (int): The amount of the power
      * @param creature The creature whose powers are to be converted
      * @return A list of power objects
      */
@@ -716,9 +716,9 @@ public class GameStateConverter {
     /**
      * Creates a GSON-compatible representation of the given relic
      * The relic object contains:
-     * "id": The id of the relic (string)
-     * "name": The name of the relic, in the currently selected language (string)
-     * "counter": The counter on the relic (int)
+     * "id" (string): The id of the relic
+     * "name" (string): The name of the relic, in the currently selected language
+     * "counter" (int): The counter on the relic
      * @param relic The relic to convert
      * @return A relic object
      */
@@ -733,11 +733,11 @@ public class GameStateConverter {
     /**
      * Creates a GSON-compatible representation of the given potion
      * The potion object contains:
-     * "id": The id of the potion (string)
-     * "name": The name of the potion, in the currently selected language (string)
-     * "can_use": Whether the potion can currently be used (boolean)
-     * "can_discard": Whether the potion can currently be discarded (boolean)
-     * "requires_target": Whether the potion must be used with a target (boolean)
+     * "id" (string): The id of the potion
+     * "name" (string): The name of the potion, in the currently selected language
+     * "can_use" (boolean): Whether the potion can currently be used
+     * "can_discard" (boolean): Whether the potion can currently be discarded
+     * "requires_target" (boolean): Whether the potion must be used with a target
      * @param potion The potion to convert
      * @return A potion object
      */

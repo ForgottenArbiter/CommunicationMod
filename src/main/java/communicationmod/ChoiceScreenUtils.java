@@ -404,11 +404,9 @@ public class ChoiceScreenUtils {
             AbstractDungeon.closeCurrentScreen();
         } else {
             AbstractCard selectedCard = AbstractDungeon.cardRewardScreen.rewardGroup.get(choice);
-            //Gdx.input.setCursorPosition((int)selectedCard.hb.cX, (int)(Settings.HEIGHT - selectedCard.hb.cY));
             CardRewardScreenPatch.doHover = true;
             CardRewardScreenPatch.hoverCard = selectedCard;
             selectedCard.hb.clicked = true;
-            //selectedCard.hb.hovered = true;
         }
     }
 
@@ -641,17 +639,14 @@ public class ChoiceScreenUtils {
                     1, ShopScreen.NAMES[13], false, false, true, true);
         } else if (shopItem instanceof AbstractCard) {
             AbstractCard card = (AbstractCard)shopItem;
-            //setCursorPosition(card.hb.cX, Settings.HEIGHT - card.hb.cY);
             ShopScreenPatch.doHover = true;
             ShopScreenPatch.hoverCard = card;
             card.hb.clicked = true;
         } else if (shopItem instanceof StoreRelic) {
             StoreRelic relic = (StoreRelic) shopItem;
-            //setCursorPosition(relic.relic.hb.cX, Settings.HEIGHT - relic.relic.hb.cY);
             relic.relic.hb.clicked = true;
         } else if (shopItem instanceof StorePotion) {
             StorePotion potion = (StorePotion) shopItem;
-            //setCursorPosition(potion.potion.hb.cX, Settings.HEIGHT - potion.potion.hb.cY);
             potion.potion.hb.clicked = true;
         }
     }
@@ -720,9 +715,7 @@ public class ChoiceScreenUtils {
         MapRoomNode currMapNode = AbstractDungeon.getCurrMapNode();
         if(currMapNode.y == 14 || (AbstractDungeon.id.equals(TheEnding.ID) && currMapNode.y == 2)) {
             if(choice == 0) {
-                DungeonMap map = AbstractDungeon.dungeonMapScreen.map;
-                setCursorPosition(map.bossHb.cX, Settings.HEIGHT - map.bossHb.cY);
-                map.bossHb.hovered = true;
+                DungeonMapPatch.doBossHover = true;
                 InputHelper.justClickedLeft = true;
                 return;
             } else {
@@ -730,9 +723,7 @@ public class ChoiceScreenUtils {
             }
         }
         ArrayList<MapRoomNode> nodeChoices = getMapScreenNodeChoices();
-        MapRoomNode chosenNode = nodeChoices.get(choice);
-        //setCursorPosition(chosenNode.hb.cX, Settings.HEIGHT - chosenNode.hb.cY);
-        MapRoomNodeHoverPatch.hoverNode = chosenNode;
+        MapRoomNodeHoverPatch.hoverNode = nodeChoices.get(choice);
         MapRoomNodeHoverPatch.doHover = true;
         AbstractDungeon.dungeonMapScreen.clicked = true;
     }
@@ -742,9 +733,9 @@ public class ChoiceScreenUtils {
         Pattern regex = Pattern.compile("\\[(.*?)\\]");
         Matcher matcher = regex.matcher(unformatted);
         if(matcher.find()) {
-            return matcher.group(1);
+            return matcher.group(1).trim();
         } else {
-            return unformatted;
+            return unformatted.trim();
         }
     }
 
