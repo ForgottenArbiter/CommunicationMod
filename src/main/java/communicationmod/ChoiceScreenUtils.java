@@ -525,7 +525,8 @@ public class ChoiceScreenUtils {
 
     public static void makeBossRewardChoice(int choice) {
         AbstractRelic chosenRelic = AbstractDungeon.bossRelicScreen.relics.get(choice);
-        setCursorPosition(chosenRelic.hb.cX, Settings.HEIGHT - chosenRelic.hb.cY);
+        AbstractRelicUpdatePatch.doHover = true;
+        AbstractRelicUpdatePatch.hoverRelic = chosenRelic;
         InputHelper.justClickedLeft = true;
     }
 

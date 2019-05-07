@@ -13,6 +13,7 @@ import com.megacrit.cardcrawl.map.MapRoomNode;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
 import com.megacrit.cardcrawl.monsters.EnemyMoveInfo;
 import com.megacrit.cardcrawl.neow.NeowEvent;
+import com.megacrit.cardcrawl.orbs.AbstractOrb;
 import com.megacrit.cardcrawl.potions.AbstractPotion;
 import com.megacrit.cardcrawl.potions.PotionSlot;
 import com.megacrit.cardcrawl.powers.AbstractPower;
@@ -530,7 +531,7 @@ public class GameStateConverter {
      */
     private static ArrayList<Object> convertMapToJson() {
         ArrayList<ArrayList<MapRoomNode>> map = AbstractDungeon.map;
-        ArrayList<Object> json_map = new ArrayList<>();
+        ArrayList<Object> jsonMap = new ArrayList<>();
         for(ArrayList<MapRoomNode> layer : map) {
             for(MapRoomNode node : layer) {
                 if(node.hasEdges()) {
@@ -547,18 +548,18 @@ public class GameStateConverter {
 
                     json_node.put("parents", json_parents);
                     json_node.put("children", json_children);
-                    json_map.add(json_node);
+                    jsonMap.add(json_node);
                 }
             }
         }
-        return json_map;
+        return jsonMap;
     }
 
     private static HashMap<String, Object> convertCoordinatesToJson(int x, int y) {
-        HashMap<String, Object> json_node = new HashMap<>();
-        json_node.put("x", x);
-        json_node.put("y", y);
-        return json_node;
+        HashMap<String, Object> jsonNode = new HashMap<>();
+        jsonNode.put("x", x);
+        jsonNode.put("y", y);
+        return jsonNode;
     }
 
     /**
@@ -573,9 +574,9 @@ public class GameStateConverter {
      * @return A node object
      */
     private static HashMap<String, Object> convertMapRoomNodeToJson(MapRoomNode node) {
-        HashMap<String, Object> json_node = convertCoordinatesToJson(node.x, node.y);
-        json_node.put("symbol", node.getRoomSymbol(true));
-        return json_node;
+        HashMap<String, Object> jsonNode = convertCoordinatesToJson(node.x, node.y);
+        jsonNode.put("symbol", node.getRoomSymbol(true));
+        return jsonNode;
     }
 
     /**
@@ -596,23 +597,23 @@ public class GameStateConverter {
      * @return A card object
      */
     private static HashMap<String, Object> convertCardToJson(AbstractCard card) {
-        HashMap<String, Object> json_card = new HashMap<>();
-        json_card.put("name", card.name);
-        json_card.put("uuid", card.uuid.toString());
+        HashMap<String, Object> jsonCard = new HashMap<>();
+        jsonCard.put("name", card.name);
+        jsonCard.put("uuid", card.uuid.toString());
         if(card.misc != 0) {
-            json_card.put("misc", card.misc);
+            jsonCard.put("misc", card.misc);
         }
         if(AbstractDungeon.getMonsters() != null) {
-            json_card.put("is_playable", card.canUse(AbstractDungeon.player, null));
+            jsonCard.put("is_playable", card.canUse(AbstractDungeon.player, null));
         }
-        json_card.put("cost", card.costForTurn);
-        json_card.put("upgrades", card.timesUpgraded);
-        json_card.put("id", card.cardID);
-        json_card.put("type", card.type.name());
-        json_card.put("rarity", card.rarity.name());
-        json_card.put("has_target", card.target== AbstractCard.CardTarget.SELF_AND_ENEMY || card.target == AbstractCard.CardTarget.ENEMY);
-        json_card.put("exhausts", card.exhaust);
-        return json_card;
+        jsonCard.put("cost", card.costForTurn);
+        jsonCard.put("upgrades", card.timesUpgraded);
+        jsonCard.put("id", card.cardID);
+        jsonCard.put("type", card.type.name());
+        jsonCard.put("rarity", card.rarity.name());
+        jsonCard.put("has_target", card.target== AbstractCard.CardTarget.SELF_AND_ENEMY || card.target == AbstractCard.CardTarget.ENEMY);
+        jsonCard.put("exhausts", card.exhaust);
+        return jsonCard;
     }
 
     /**
@@ -636,38 +637,38 @@ public class GameStateConverter {
      * @return A monster object
      */
     private static HashMap<String, Object> convertMonsterToJson(AbstractMonster monster) {
-        HashMap<String, Object> json_monster = new HashMap<>();
-        json_monster.put("id", monster.id);
-        json_monster.put("name", monster.name);
-        json_monster.put("current_hp", monster.currentHealth);
-        json_monster.put("max_hp", monster.maxHealth);
+        HashMap<String, Object> jsonMonster = new HashMap<>();
+        jsonMonster.put("id", monster.id);
+        jsonMonster.put("name", monster.name);
+        jsonMonster.put("current_hp", monster.currentHealth);
+        jsonMonster.put("max_hp", monster.maxHealth);
         if (AbstractDungeon.player.hasRelic(RunicDome.ID)) {
-            json_monster.put("intent", AbstractMonster.Intent.NONE);
+            jsonMonster.put("intent", AbstractMonster.Intent.NONE);
         } else {
-            json_monster.put("intent", monster.intent.name());
+            jsonMonster.put("intent", monster.intent.name());
             EnemyMoveInfo moveInfo = (EnemyMoveInfo)ReflectionHacks.getPrivate(monster, AbstractMonster.class, "move");
             if (moveInfo != null) {
-                json_monster.put("move_id", moveInfo.nextMove);
-                json_monster.put("move_base_damage", moveInfo.baseDamage);
+                jsonMonster.put("move_id", moveInfo.nextMove);
+                jsonMonster.put("move_base_damage", moveInfo.baseDamage);
                 int intentDmg = (int)ReflectionHacks.getPrivate(monster, AbstractMonster.class, "intentDmg");
                 if (moveInfo.baseDamage > 0) {
-                    json_monster.put("move_adjusted_damage", intentDmg);
+                    jsonMonster.put("move_adjusted_damage", intentDmg);
                 } else {
-                    json_monster.put("move_adjusted_damage", moveInfo.baseDamage);
+                    jsonMonster.put("move_adjusted_damage", moveInfo.baseDamage);
                 }
                 int move_hits = moveInfo.multiplier;
                 // If isMultiDamage is not set, the multiplier is probably 0, but there is really 1 attack.
                 if (!moveInfo.isMultiDamage) {
                     move_hits = 1;
                 }
-                json_monster.put("move_hits", move_hits);
+                jsonMonster.put("move_hits", move_hits);
             }
         }
-        json_monster.put("half_dead", monster.halfDead);
-        json_monster.put("is_gone", monster.isDeadOrEscaped());
-        json_monster.put("block", monster.currentBlock);
-        json_monster.put("powers", convertCreaturePowersToJson(monster));
-        return json_monster;
+        jsonMonster.put("half_dead", monster.halfDead);
+        jsonMonster.put("is_gone", monster.isDeadOrEscaped());
+        jsonMonster.put("block", monster.currentBlock);
+        jsonMonster.put("powers", convertCreaturePowersToJson(monster));
+        return jsonMonster;
     }
 
     /**
@@ -678,18 +679,24 @@ public class GameStateConverter {
      * "block" (int): The player's current block
      * "powers" (list): The player's current powers
      * "energy" (int): The player's current energy
+     * "orbs" (list): The player's current orb slots
      * Note: many other things, like draw pile and discard pile, are in the combat state
      * @param player The player to convert
      * @return A player object
      */
     private static HashMap<String, Object> convertPlayerToJson(AbstractPlayer player) {
-        HashMap<String, Object> json_player = new HashMap<>();
-        json_player.put("max_hp", player.maxHealth);
-        json_player.put("current_hp", player.currentHealth);
-        json_player.put("powers", convertCreaturePowersToJson(player));
-        json_player.put("energy", player.energy.energy);
-        json_player.put("block", player.currentBlock);
-        return json_player;
+        HashMap<String, Object> jsonPlayer = new HashMap<>();
+        jsonPlayer.put("max_hp", player.maxHealth);
+        jsonPlayer.put("current_hp", player.currentHealth);
+        jsonPlayer.put("powers", convertCreaturePowersToJson(player));
+        jsonPlayer.put("energy", player.energy.energy);
+        jsonPlayer.put("block", player.currentBlock);
+        ArrayList<Object> orbs = new ArrayList<>();
+        for(AbstractOrb orb : player.orbs) {
+            orbs.add(convertOrbToJson(orb));
+        }
+        jsonPlayer.put("orbs", orbs);
+        return jsonPlayer;
     }
 
     /**
@@ -723,11 +730,11 @@ public class GameStateConverter {
      * @return A relic object
      */
     private static HashMap<String, Object> convertRelicToJson(AbstractRelic relic) {
-        HashMap<String, Object> json_relic = new HashMap<>();
-        json_relic.put("id", relic.relicId);
-        json_relic.put("name", relic.name);
-        json_relic.put("counter", relic.counter);
-        return json_relic;
+        HashMap<String, Object> jsonRelic = new HashMap<>();
+        jsonRelic.put("id", relic.relicId);
+        jsonRelic.put("name", relic.name);
+        jsonRelic.put("counter", relic.counter);
+        return jsonRelic;
     }
 
     /**
@@ -742,18 +749,37 @@ public class GameStateConverter {
      * @return A potion object
      */
     private static HashMap<String, Object> convertPotionToJson(AbstractPotion potion) {
-        HashMap<String, Object> json_potion = new HashMap<>();
-        json_potion.put("id", potion.ID);
-        json_potion.put("name", potion.name);
+        HashMap<String, Object> jsonPotion = new HashMap<>();
+        jsonPotion.put("id", potion.ID);
+        jsonPotion.put("name", potion.name);
         boolean canUse = potion.canUse();
         boolean canDiscard = potion.canDiscard();
         if (potion instanceof PotionSlot) {
             canDiscard = canUse = false;
         }
-        json_potion.put("can_use", canUse);
-        json_potion.put("can_discard", canDiscard);
-        json_potion.put("requires_target", potion.isThrown);
-        return json_potion;
+        jsonPotion.put("can_use", canUse);
+        jsonPotion.put("can_discard", canDiscard);
+        jsonPotion.put("requires_target", potion.isThrown);
+        return jsonPotion;
+    }
+
+    /**
+     * Creates a GSON-compatible representation of the given orb
+     * The orb object contains:
+     * "id" (string): The id of the orb
+     * "name" (string): The name of the orb, in the currently selected language
+     * "evoke_amount" (int): The evoke amount of the orb
+     * "passive_amount" (int): The passive amount of the orb
+     * @param orb The orb to convert
+     * @return An orb object
+     */
+    private static HashMap<String, Object> convertOrbToJson(AbstractOrb orb) {
+        HashMap<String, Object> jsonOrb =  new HashMap<>();
+        jsonOrb.put("id", orb.ID);
+        jsonOrb.put("name", orb.name);
+        jsonOrb.put("evoke_amount", orb.evokeAmount);
+        jsonOrb.put("passive_amount", orb.passiveAmount);
+        return jsonOrb;
     }
 
 }
