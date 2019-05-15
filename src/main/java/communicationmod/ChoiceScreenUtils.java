@@ -720,7 +720,7 @@ public class ChoiceScreenUtils {
                 InputHelper.justClickedLeft = true;
                 return;
             } else {
-                return;
+                throw new IndexOutOfBoundsException("Only a boss node can be chosen here.");
             }
         }
         ArrayList<MapRoomNode> nodeChoices = getMapScreenNodeChoices();

@@ -135,7 +135,7 @@ public class GameStateListener {
                     return true;
                 }
 
-                // Out of combat, we want to wait one update cycle, as some screen transitions trigger further updates.
+            // Out of combat, we want to wait one update cycle, as some screen transitions trigger further updates.
             } else {
                 waitOneUpdate = true;
                 previousScreenUp = newScreenUp;
