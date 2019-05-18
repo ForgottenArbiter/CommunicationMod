@@ -364,6 +364,7 @@ public class GameStateConverter {
      * "cards" (list): The list of cards available to pick, including selected cards
      * "selected_cards" (list): The list of cards that are currently selected
      * "num_cards" (int): The number of cards that must be selected
+     * "any_number" (boolean): Whether any number of cards can be selected
      * "for_upgrade" (boolean): Whether the selected cards will be upgraded
      * "for_transform" (boolean): Whether the selected cards will be transformed
      * _for_purge" (boolean): Whether the selected cards will be removed from the deck
@@ -389,6 +390,7 @@ public class GameStateConverter {
         state.put("cards", gridJson);
         state.put("selected_cards", gridSelectedJson);
         state.put("num_cards", numCards);
+        state.put("any_number", screen.anyNumber);
         state.put("for_upgrade", forUpgrade);
         state.put("for_transform", forTransform);
         state.put("for_purge", forPurge);

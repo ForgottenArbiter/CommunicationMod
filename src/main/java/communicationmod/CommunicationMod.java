@@ -292,6 +292,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
                 writeThread.interrupt();
                 listener.destroy();
                 logger.error("Timed out while waiting for signal from external process.");
+                logger.error("Check communication_mod_errors.log for stderr from the process.");
                 return false;
             } else {
                 logger.info(String.format("Received message from external process: %s", message));

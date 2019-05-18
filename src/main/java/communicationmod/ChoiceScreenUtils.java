@@ -717,7 +717,6 @@ public class ChoiceScreenUtils {
         if(currMapNode.y == 14 || (AbstractDungeon.id.equals(TheEnding.ID) && currMapNode.y == 2)) {
             if(choice == 0) {
                 DungeonMapPatch.doBossHover = true;
-                InputHelper.justClickedLeft = true;
                 return;
             } else {
                 throw new IndexOutOfBoundsException("Only a boss node can be chosen here.");

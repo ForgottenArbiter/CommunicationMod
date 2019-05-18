@@ -3,6 +3,7 @@ package communicationmod.patches;
 import com.evacipated.cardcrawl.modthespire.lib.*;
 import com.evacipated.cardcrawl.modthespire.patcher.PatchingException;
 import com.megacrit.cardcrawl.helpers.Hitbox;
+import com.megacrit.cardcrawl.helpers.input.InputHelper;
 import com.megacrit.cardcrawl.map.DungeonMap;
 import javassist.CannotCompileException;
 import javassist.CtBehavior;
@@ -24,6 +25,7 @@ public class DungeonMapPatch {
 
         if(doBossHover) {
             _instance.bossHb.hovered = true;
+            InputHelper.justClickedLeft = true;
             doBossHover = false;
         }
     }
