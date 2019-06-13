@@ -73,6 +73,7 @@ public class GameStateConverter {
      * - "max_hp" (int): The player's maximum hp
      * - "floor" (int): The current floor number
      * - "act" (int): The current act number
+     * - "act_boss" (string): The name of the current Act's visible boss encounter
      * - "gold" (int): The player's current gold total
      * - "seed" (long): The seed used by the current game
      * - "class" (string): The player's current class
@@ -103,6 +104,7 @@ public class GameStateConverter {
         state.put("max_hp", AbstractDungeon.player.maxHealth);
         state.put("floor", AbstractDungeon.floorNum);
         state.put("act", AbstractDungeon.actNum);
+        state.put("act_boss", AbstractDungeon.bossList.get(0));
         state.put("gold", AbstractDungeon.player.gold);
         state.put("seed", Settings.seed);
         state.put("class", AbstractDungeon.player.chosenClass.name());
