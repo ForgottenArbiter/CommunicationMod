@@ -60,6 +60,7 @@ public class AbstractRelicUpdatePatch {
         if(doHover) {
             if(hoverRelic == _instance) {
                 _instance.hb.hovered = true;
+                _instance.hb.clicked = true;
                 doHover = false;
             } else {
                 _instance.hb.hovered = false;
