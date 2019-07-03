@@ -10,25 +10,33 @@
     <name>Communication Mod</name>
     <description>Used to help external programs communicate with Slay the Spire</description>
 
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <SlayTheSpire.version>07-01-2019</SlayTheSpire.version>
+        <ModTheSpire.version>3.11.0</ModTheSpire.version>
+        <BaseMod.version>5.15.0</BaseMod.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.megacrit.cardcrawl</groupId>
             <artifactId>slaythespire</artifactId>
-            <version>017</version>
+            <version>${SlayTheSpire.version}</version>
             <scope>system</scope>
             <systemPath>${basedir}/../lib/desktop-1.0.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.evacipated.cardcrawl</groupId>
             <artifactId>ModTheSpire</artifactId>
-            <version>3.10.1</version>
+            <version>${ModTheSpire.version}</version>
             <scope>system</scope>
             <systemPath>${basedir}/../lib/ModTheSpire.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.evacipated.cardcrawl</groupId>
             <artifactId>BaseMod</artifactId>
-            <version>5.13.0</version>
+            <version>${BaseMod.version}</version>
             <scope>system</scope>
             <systemPath>${basedir}/../lib/BaseMod.jar</systemPath>
         </dependency>
@@ -37,13 +45,7 @@
             <artifactId>gson</artifactId>
             <version>2.8.5</version>
         </dependency>
-
     </dependencies>
-
-    <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-    </properties>
 
     <build>
         <finalName>CommunicationMod</finalName>
@@ -89,6 +91,27 @@
                 </executions>
             </plugin>
         </plugins>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>ModTheSpire.json</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>ModTheSpire.json</include>
+                </includes>
+            </resource>
+        </resources>
+
     </build>
 
 </project>
