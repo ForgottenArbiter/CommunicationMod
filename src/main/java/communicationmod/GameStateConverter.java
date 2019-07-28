@@ -704,11 +704,36 @@ public class GameStateConverter {
     }
 
     /**
+     * Checks whether the given object has the specified field. If so, returns the field's value. Else returns null.
+     * @param object The object used to look for the specified field
+     * @param fieldName The field that we want to access
+     * @return The value of the field, if present, or else null.
+     */
+    private static Object getFieldIfExists(Object object, String fieldName) {
+        Class objectClass = object.getClass();
+        for (Field field : objectClass.getDeclaredFields()) {
+            if (field.getName().equals(fieldName)) {
+                try {
+                    field.setAccessible(true);
+                    return field.get(object);
+                } catch(IllegalAccessException e) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * Creates a GSON-compatible representation of the given creature's powers
      * The power object contains:
      * "id" (string): The id of the power
      * "name" (string): The name of the power, in the currently selected language
      * "amount" (int): The amount of the power
+     * "damage" (int, optional): The amount of damage the power does, if applicable
+     * "misc" (int, optional): Contains misc values that don't fit elsewhere (such as the base value for Flight)
+     * "card" (object, optional): The card associated with the power (for powers like Nightmare)
      * @param creature The creature whose powers are to be converted
      * @return A list of power objects
      */
@@ -719,6 +744,25 @@ public class GameStateConverter {
             json_power.put("id", power.ID);
             json_power.put("name", power.name);
             json_power.put("amount", power.amount);
+            Object damage = getFieldIfExists(power, "damage");
+            if (damage != null) {
+                json_power.put("daamge", (int)damage);
+            }
+            Object card = getFieldIfExists(power, "card");
+            if (card != null) {
+                json_power.put("card", convertCardToJson((AbstractCard)card));
+            }
+            String[] miscFieldNames = {
+                    "basePower", "maxAmt", "storedAmount", "hpLoss"
+            };
+            Object misc = null;
+            for (String fieldName : miscFieldNames) {
+                misc = getFieldIfExists(power, fieldName);
+                if (misc != null) {
+                    json_power.put("misc", (int)misc);
+                    break;
+                }
+            }
             powers.add(json_power);
         }
         return powers;
