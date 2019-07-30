@@ -732,8 +732,9 @@ public class GameStateConverter {
      * "name" (string): The name of the power, in the currently selected language
      * "amount" (int): The amount of the power
      * "damage" (int, optional): The amount of damage the power does, if applicable
-     * "misc" (int, optional): Contains misc values that don't fit elsewhere (such as the base value for Flight)
      * "card" (object, optional): The card associated with the power (for powers like Nightmare)
+     * "misc" (int, optional): Contains misc values that don't fit elsewhere (such as the base value for Flight)
+     * "just_applied" (boolean, optional): Used with many powers to prevent them from expiring immediately
      * @param creature The creature whose powers are to be converted
      * @return A list of power objects
      */
@@ -746,15 +747,20 @@ public class GameStateConverter {
             json_power.put("amount", power.amount);
             Object damage = getFieldIfExists(power, "damage");
             if (damage != null) {
-                json_power.put("daamge", (int)damage);
+                json_power.put("damage", (int)damage);
             }
             Object card = getFieldIfExists(power, "card");
             if (card != null) {
                 json_power.put("card", convertCardToJson((AbstractCard)card));
             }
             String[] miscFieldNames = {
-                    "basePower", "maxAmt", "storedAmount", "hpLoss"
+                    "basePower", "maxAmt", "storedAmount", "hpLoss", "cardsDoubledThisTurn"
             };
+            // basePower gives the base power for Malleable
+            // maxAmt gives the max amount of damage per turn for Invincible
+            // storedAmount gives the number of stacks per turn for Flight
+            // hpLoss gives the amount of HP lost per turn with Combust
+            // cardsDoubledThisTurn gives the number of cards already doubled with Echo Form
             Object misc = null;
             for (String fieldName : miscFieldNames) {
                 misc = getFieldIfExists(power, fieldName);
@@ -763,6 +769,21 @@ public class GameStateConverter {
                     break;
                 }
             }
+
+            String[] justAppliedNames = {
+                    "justApplied", "skipFirst"
+            };
+            // justApplied is used with a variety of powers to prevent them from expiring immediately (cast from bool)
+            // skipFirst is the same as justApplied, for the Ritual power
+            Object justApplied = null;
+            for (String fieldName : justAppliedNames) {
+                justApplied = getFieldIfExists(power, fieldName);
+                if (justApplied != null) {
+                    json_power.put("just_applied", (boolean)justApplied);
+                    break;
+                }
+            }
+
             powers.add(json_power);
         }
         return powers;
