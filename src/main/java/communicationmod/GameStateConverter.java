@@ -490,6 +490,7 @@ public class GameStateConverter {
      * "discard_pile" (list): The list of cards in your discard pile
      * "exhaust_pile" (list): The list of cards in your exhaust pile
      * "hand" (list): The list of cards in your hand
+     * "limbo" (list): The list of cards that are in 'limbo', or currently being played.
      * "player" (object): The state of the player
      * "monsters" (list): A list of the enemies in the combat, including dead enemies
      * Note: The order of the draw pile is not currently randomized when sent to the client.
@@ -518,10 +519,15 @@ public class GameStateConverter {
         for(AbstractCard card : AbstractDungeon.player.hand.group) {
             hand.add(convertCardToJson(card));
         }
+        ArrayList<Object> limbo = new ArrayList<>();
+        for(AbstractCard card : AbstractDungeon.player.limbo.group) {
+            limbo.add(convertCardToJson(card));
+        }
         state.put("draw_pile", draw_pile);
         state.put("discard_pile", discard_pile);
         state.put("exhaust_pile", exhaust_pile);
         state.put("hand", hand);
+        state.put("limbo", limbo);
         state.put("player", convertPlayerToJson(AbstractDungeon.player));
         return state;
     }
