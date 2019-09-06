@@ -2,6 +2,7 @@ package communicationmod;
 
 import basemod.ReflectionHacks;
 import com.google.gson.Gson;
+import com.megacrit.cardcrawl.actions.GameActionManager;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.characters.AbstractPlayer;
 import com.megacrit.cardcrawl.core.AbstractCreature;
@@ -490,9 +491,12 @@ public class GameStateConverter {
      * "discard_pile" (list): The list of cards in your discard pile
      * "exhaust_pile" (list): The list of cards in your exhaust pile
      * "hand" (list): The list of cards in your hand
-     * "limbo" (list): The list of cards that are in 'limbo', or currently being played.
+     * "limbo" (list): The list of cards that are in 'limbo', which is used for a variety of effects in game.
+     * "card_in_play" (object, optional): The card that is currently in play, if any.
      * "player" (object): The state of the player
      * "monsters" (list): A list of the enemies in the combat, including dead enemies
+     * "turn" (int): The current turn (or round) number of the combat.
+     * "cards_discarded_this_turn" (int): The number of cards discarded this turn.
      * Note: The order of the draw pile is not currently randomized when sent to the client.
      * @return The combat state object
      */
@@ -528,7 +532,12 @@ public class GameStateConverter {
         state.put("exhaust_pile", exhaust_pile);
         state.put("hand", hand);
         state.put("limbo", limbo);
+        if (AbstractDungeon.player.cardInUse != null) {
+            state.put("card_in_play", convertCardToJson(AbstractDungeon.player.cardInUse));
+        }
         state.put("player", convertPlayerToJson(AbstractDungeon.player));
+        state.put("turn", GameActionManager.turn);
+        state.put("cards_discarded_this_turn", GameActionManager.totalDiscardedThisTurn);
         return state;
     }
 
@@ -639,6 +648,8 @@ public class GameStateConverter {
      * "move_base_damage" (int): The base damage for the monster's current attack
      * "move_adjusted_damage" (int): The damage number actually shown on the intent for the monster's current attack
      * "move_hits" (int): The number of hits done by the current attack
+     * "last_move_id" (int): The move id byte for the monster's previous move
+     * "second_last_move_id" (int): The move id byte from 2 moves ago
      * "half_dead" (boolean): Whether the monster is half dead
      * "is_gone" (boolean): Whether the monster is dead or has run away
      * "powers" (list): The monster's current powers
@@ -673,6 +684,12 @@ public class GameStateConverter {
                 }
                 jsonMonster.put("move_hits", move_hits);
             }
+        }
+        if(monster.moveHistory.size() >= 2) {
+            jsonMonster.put("last_move_id", monster.moveHistory.get(monster.moveHistory.size() - 2));
+        }
+        if(monster.moveHistory.size() >= 3) {
+            jsonMonster.put("second_last_move_id", monster.moveHistory.get(monster.moveHistory.size() - 3));
         }
         jsonMonster.put("half_dead", monster.halfDead);
         jsonMonster.put("is_gone", monster.isDeadOrEscaped());
