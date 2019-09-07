@@ -29,6 +29,7 @@ import com.megacrit.cardcrawl.shop.ShopScreen;
 import com.megacrit.cardcrawl.shop.StorePotion;
 import com.megacrit.cardcrawl.shop.StoreRelic;
 import com.megacrit.cardcrawl.ui.buttons.LargeDialogOptionButton;
+import com.megacrit.cardcrawl.ui.panels.EnergyPanel;
 import communicationmod.patches.UpdateBodyTextPatch;
 
 import java.lang.reflect.Field;
@@ -716,7 +717,7 @@ public class GameStateConverter {
         jsonPlayer.put("max_hp", player.maxHealth);
         jsonPlayer.put("current_hp", player.currentHealth);
         jsonPlayer.put("powers", convertCreaturePowersToJson(player));
-        jsonPlayer.put("energy", player.energy.energy);
+        jsonPlayer.put("energy", EnergyPanel.totalCount);
         jsonPlayer.put("block", player.currentBlock);
         ArrayList<Object> orbs = new ArrayList<>();
         for(AbstractOrb orb : player.orbs) {
