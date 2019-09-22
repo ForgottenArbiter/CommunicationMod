@@ -19,6 +19,7 @@ public class GameStateListener {
     private static boolean waitingForCommand = false;
     private static boolean hasPresentedOutOfGameState = false;
     private static boolean waitOneUpdate = false;
+    private static int timeout = 0;
 
     /**
      * Used to indicate that something (in game logic, not external command) has been done that will change the game state,
@@ -27,6 +28,14 @@ public class GameStateListener {
     public static void registerStateChange() {
         externalChange = true;
         waitingForCommand = false;
+    }
+
+    /**
+     * Used to tell hasStateChanged() to indicate a state change after a specified number of frames.
+     * @param newTimeout The number of frames to wait
+     */
+    public static void setTimeout(int newTimeout) {
+        timeout = newTimeout;
     }
 
     /**
@@ -166,7 +175,16 @@ public class GameStateListener {
         }
         // Sometimes, we need to register an external change in combat while an action is resolving which brings
         // the screen up. Because the screen did not change, this is not covered by other cases.
-        return externalChange && inCombat && newScreenUp;
+        if (externalChange && inCombat && newScreenUp) {
+            return true;
+        }
+        if (timeout > 0) {
+            timeout -= 1;
+            if(timeout == 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -206,6 +224,7 @@ public class GameStateListener {
                 previousScreen = AbstractDungeon.screen;
                 previousScreenUp = AbstractDungeon.isScreenUp;
                 previousGold = AbstractDungeon.player.gold;
+                timeout = 0;
             }
         } else {
             myTurn = false;

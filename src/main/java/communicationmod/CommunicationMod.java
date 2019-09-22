@@ -12,6 +12,7 @@ import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.helpers.FontHelper;
 import com.megacrit.cardcrawl.helpers.ImageMaster;
+import communicationmod.patches.InputActionPatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -111,6 +112,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
             sendGameState();
             mustSendGameState = false;
         }
+        InputActionPatch.doKeypress = false;
     }
 
     public void receivePostDungeonUpdate() {

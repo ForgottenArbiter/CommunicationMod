@@ -1,5 +1,7 @@
 package communicationmod;
 
+import basemod.ReflectionHacks;
+import com.badlogic.gdx.Gdx;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.cards.CardQueueItem;
 import com.megacrit.cardcrawl.characters.AbstractPlayer;
@@ -9,12 +11,16 @@ import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.helpers.SeedHelper;
 import com.megacrit.cardcrawl.helpers.TrialHelper;
+import com.megacrit.cardcrawl.helpers.input.InputAction;
+import com.megacrit.cardcrawl.helpers.input.InputActionSet;
+import com.megacrit.cardcrawl.helpers.input.InputHelper;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
 import com.megacrit.cardcrawl.potions.AbstractPotion;
 import com.megacrit.cardcrawl.potions.PotionSlot;
 import com.megacrit.cardcrawl.random.Random;
 import com.megacrit.cardcrawl.relics.AbstractRelic;
 import com.megacrit.cardcrawl.rooms.*;
+import communicationmod.patches.InputActionPatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -63,6 +69,12 @@ public class CommandExecutor {
             case "state":
                 executeStateCommand();
                 return false;
+            case "key":
+                executeKeyCommand(tokens);
+                return true;
+            case "click":
+                executeClickCommand(tokens);
+                return true;
 
             default:
                 logger.info("This should never happen.");
@@ -92,6 +104,10 @@ public class CommandExecutor {
         }
         if (isStartCommandAvailable()) {
             availableCommands.add("start");
+        }
+        if (isInDungeon()) {
+            availableCommands.add("key");
+            availableCommands.add("click");
         }
         availableCommands.add("state");
         return availableCommands;
@@ -359,6 +375,159 @@ public class CommandExecutor {
         manager.setChosenCharacter(selectedClass);
         CardCrawlGame.chosenCharacter = selectedClass;
         GameStateListener.resetStateVariables();
+    }
+
+    private static void executeKeyCommand(String[] tokens) throws InvalidCommandException {
+        if (tokens.length < 2) {
+            throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.MISSING_ARGUMENT);
+        }
+        int keycode = getKeycode(tokens[1].toUpperCase());
+        if (keycode == -1) {
+            throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.INVALID_ARGUMENT, tokens[1]);
+        }
+        int timeout = 100;
+        if (tokens.length >= 3) {
+            try {
+                timeout = Integer.parseInt(tokens[2]);
+            } catch (NumberFormatException e) {
+                throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.INVALID_ARGUMENT, tokens[2]);
+            }
+            if(timeout < 0) {
+                throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.OUT_OF_BOUNDS, tokens[2]);
+            }
+        }
+        InputActionPatch.doKeypress = true;
+        InputActionPatch.key = keycode;
+        InputHelper.updateFirst();
+        GameStateListener.setTimeout(timeout);
+    }
+
+    private static void executeClickCommand(String[] tokens) throws InvalidCommandException {
+        if (tokens.length < 4) {
+            throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.MISSING_ARGUMENT);
+        }
+        float x = 0;
+        float y = 0;
+        int timeout = 100;
+        try {
+            x = Float.parseFloat(tokens[2]);
+        } catch (NumberFormatException e) {
+            throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.INVALID_ARGUMENT, tokens[2]);
+        }
+        try {
+            y = Float.parseFloat(tokens[3]);
+        } catch (NumberFormatException e) {
+            throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.INVALID_ARGUMENT, tokens[3]);
+        }
+        x = x * Settings.scale;
+        y = y * Settings.scale;
+        Gdx.input.setCursorPosition((int)x, (int)y);
+        InputHelper.updateFirst();
+        String token1 = tokens[1].toUpperCase();
+        if (token1.equals("LEFT")) {
+            InputHelper.justClickedLeft = true;
+            InputHelper.isMouseDown = true;
+            ReflectionHacks.setPrivateStatic(InputHelper.class, "isPrevMouseDown", true);
+        } else if (token1.equals("RIGHT")) {
+            InputHelper.justClickedRight = true;
+            InputHelper.isMouseDown_R = true;
+            ReflectionHacks.setPrivateStatic(InputHelper.class, "isPrevMouseDown_R", true);
+        } else {
+            throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.INVALID_ARGUMENT, tokens[1]);
+        }
+        if (tokens.length >= 5) {
+            try {
+                timeout = Integer.parseInt(tokens[4]);
+            } catch (NumberFormatException e) {
+                throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.INVALID_ARGUMENT, tokens[4]);
+            }
+            if(timeout < 0) {
+                throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.OUT_OF_BOUNDS, tokens[4]);
+            }
+        }
+        GameStateListener.setTimeout(timeout);
+    }
+
+    private static int getKeycode(String keyName) {
+        InputAction action;
+        switch(keyName) {
+            case "CONFIRM":
+                action = InputActionSet.confirm;
+                break;
+            case "CANCEL":
+                action = InputActionSet.cancel;
+                break;
+            case "MAP":
+                action = InputActionSet.map;
+                break;
+            case "DECK":
+                action = InputActionSet.masterDeck;
+                break;
+            case "DRAW_PILE":
+                action = InputActionSet.drawPile;
+                break;
+            case "DISCARD_PILE":
+                action = InputActionSet.discardPile;
+                break;
+            case "EXHAUST_PILE":
+                action = InputActionSet.exhaustPile;
+                break;
+            case "END_TURN":
+                action = InputActionSet.endTurn;
+                break;
+            case "UP":
+                action = InputActionSet.up;
+                break;
+            case "DOWN":
+                action = InputActionSet.down;
+                break;
+            case "LEFT":
+                action = InputActionSet.left;
+                break;
+            case "RIGHT":
+                action = InputActionSet.right;
+                break;
+            case "DROP_CARD":
+                action = InputActionSet.releaseCard;
+                break;
+            case "CARD_1":
+                action = InputActionSet.selectCard_1;
+                break;
+            case "CARD_2":
+                action = InputActionSet.selectCard_2;
+                break;
+            case "CARD_3":
+                action = InputActionSet.selectCard_3;
+                break;
+            case "CARD_4":
+                action = InputActionSet.selectCard_4;
+                break;
+            case "CARD_5":
+                action = InputActionSet.selectCard_5;
+                break;
+            case "CARD_6":
+                action = InputActionSet.selectCard_6;
+                break;
+            case "CARD_7":
+                action = InputActionSet.selectCard_7;
+                break;
+            case "CARD_8":
+                action = InputActionSet.selectCard_8;
+                break;
+            case "CARD_9":
+                action = InputActionSet.selectCard_9;
+                break;
+            case "CARD_10":
+                action = InputActionSet.selectCard_10;
+                break;
+            default:
+                action = null;
+        }
+        if (action == null) {
+            return -1;
+        } else {
+            return (int) ReflectionHacks.getPrivate(action, InputAction.class, "keycode");
+        }
     }
 
     private static int getValidChoiceIndex(String[] tokens, ArrayList<String> validChoices) throws InvalidCommandException {
