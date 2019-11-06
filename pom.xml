@@ -5,7 +5,7 @@
 
     <groupId>autoplay</groupId>
     <artifactId>CommunicationMod</artifactId>
-    <version>0.7.0</version>
+    <version>0.8.0</version>
     <packaging>jar</packaging>
     <name>Communication Mod</name>
     <description>Used to help external programs communicate with Slay the Spire</description>
@@ -13,9 +13,9 @@
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <SlayTheSpire.version>07-01-2019</SlayTheSpire.version>
-        <ModTheSpire.version>3.11.0</ModTheSpire.version>
-        <BaseMod.version>5.15.0</BaseMod.version>
+        <SlayTheSpire.version>07-17-2019</SlayTheSpire.version>
+        <ModTheSpire.version>3.14.1</ModTheSpire.version>
+        <BaseMod.version>5.15.1</BaseMod.version>
     </properties>
 
     <dependencies>
