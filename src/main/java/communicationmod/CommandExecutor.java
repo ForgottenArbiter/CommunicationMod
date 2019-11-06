@@ -75,6 +75,9 @@ public class CommandExecutor {
             case "click":
                 executeClickCommand(tokens);
                 return true;
+            case "wait":
+                executeWaitCommand(tokens);
+                return true;
 
             default:
                 logger.info("This should never happen.");
@@ -108,6 +111,7 @@ public class CommandExecutor {
         if (isInDungeon()) {
             availableCommands.add("key");
             availableCommands.add("click");
+            availableCommands.add("wait");
         }
         availableCommands.add("state");
         return availableCommands;
@@ -444,6 +448,22 @@ public class CommandExecutor {
             if(timeout < 0) {
                 throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.OUT_OF_BOUNDS, tokens[4]);
             }
+        }
+        GameStateListener.setTimeout(timeout);
+    }
+
+    private static void executeWaitCommand(String[] tokens) throws InvalidCommandException {
+        if (tokens.length < 2) {
+            throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.MISSING_ARGUMENT);
+        }
+        int timeout = 0;
+        try {
+            timeout = Integer.parseInt(tokens[1]);
+        } catch (NumberFormatException e) {
+            throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.INVALID_ARGUMENT, tokens[1]);
+        }
+        if(timeout < 0) {
+            throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.OUT_OF_BOUNDS, tokens[1]);
         }
         GameStateListener.setTimeout(timeout);
     }
