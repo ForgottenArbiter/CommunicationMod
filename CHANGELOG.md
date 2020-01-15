@@ -1,5 +1,11 @@
 ## Changelog ##
 
+#### v1.0.0 ####
+* Added key command
+* Added click command
+* Added wait command
+* Fixed compatibility with version 2.0 of StS
+
 #### v0.8.0 ####
 * Added card_in_play to the game state
 * Added the turn number to the game state

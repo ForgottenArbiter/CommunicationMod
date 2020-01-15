@@ -57,6 +57,22 @@ CommunicationMod launches a specified process and communicates with this process
     - Clicks the button on the left side of the screen, generally causing you to return to the previous screen.
     - Equivalent to SKIP, CANCEL, and LEAVE.
     - Available whenever the return, cancel, or leave buttons are present on the left side of the screen. Also used for the skip button on card reward screens.
+  - KEY Keyname [Timeout]
+    - Presses the key corresponding to Keyname
+    - Possible keynames are: Confirm, Cancel, Map, Deck, Draw_Pile, Discard_Pile, Exhaust_Pile, End_Turn, Up, Down, Left, Right, Drop_Card, Card_1, Card_2, ..., Card_10
+    - The actual keys pressed depend on the corresponding mapping in the game options
+    - If no state change is detected after [Timeout] frames (default 100), Communication Mod will then transmit the new state and accept input from the game. This is useful for keypresses that open menus or pick up cards, without affecting the state as detected by Communication Mod.
+    - Only available in a run (not the main menus)
+  - CLICK Left|Right X Y
+    - Clicks the selected mouse button at the specified (X,Y) coordinates
+    - (0,0) is the upper left corner of the screen, and (1920,1080) is the lower right corner, regardless of game resolution
+    - Will move your cursor to the specified coordindates
+    - Timeout works the same as the CLICK command
+    - Only available in a run
+  - WAIT Timeout
+    - Waits for the specified number of frames or until a state change is detected, then transmits the current game state (same behavior as Timeout for the CLICK and KEY commands, but no input is sent to the game)
+    - Possibly useful for KEY and CLICK commands which are expected to produce multiple state changes as detected by Communication Mod
+    - Only available in a run
   - STATE
     - Causes CommunicationMod to immediately send a JSON representation of the current state to the external process, whether or not the game state is stable.
     - Always available.
@@ -72,7 +88,6 @@ CommunicationMod launches a specified process and communicates with this process
 - Unselecting cards in hand select screens is not supported.
 - Several actions do not currently register a state change if they are performed manually in game.
 - You must manually edit the mod's config file to set the command for your external process.
-- Communication Mod has only been tested on Windows 10 at this point.
 - Communication Mod has not been tested without fast mode on.
 - Some of the commands will currently hijack your mouse cursor, though the hijacking of your mouse will go away in future versions.
 
