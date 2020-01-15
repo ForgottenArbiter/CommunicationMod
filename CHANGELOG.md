@@ -1,7 +1,15 @@
 ## Changelog ##
 
+#### v0.8.0 ####
+* Added card_in_play to the game state
+* Added the turn number to the game state
+* Added the number of cards discarded this turn to the game state
+* Added the monsters' last two move ids to the game state
+* Fixed crash with StS version 1.1
+* Fixed a bug where max energy would be transmitted instead of current energy
+
 #### v0.7.0 ####
-* Added Limbo to the game state, which contains the cards currently being played
+* Added Limbo to the game state, which is used for various cards such as Havoc
 * Added a number of new fields to specific powers which did not have all of their state captured
 
 #### v0.6.0 ####
