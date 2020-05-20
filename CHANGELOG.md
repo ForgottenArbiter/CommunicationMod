@@ -1,5 +1,9 @@
 ## Changelog ##
 
+#### v1.0.1 ####
+* Fixed crash when closing the boss chest
+* Fixed a bug causing the cancel command to do nothing once in a shop when the external program was launched from the mods menu
+
 #### v1.0.0 ####
 * Added key command
 * Added click command
