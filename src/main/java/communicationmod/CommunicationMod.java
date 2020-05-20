@@ -151,6 +151,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
 
         ModButton startProcessButton = new ModButton(
                 350, 650, settingsPanel, modButton -> {
+                    BaseMod.modSettingsUp = false;
                     startExternalProcess();
                 });
         settingsPanel.addUIElement(startProcessButton);
@@ -273,7 +274,6 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
                 listener.destroyForcibly();
             }
         }
-        // TODO: Check compatibility for non-Windows OS here:
         ProcessBuilder builder = new ProcessBuilder(getSubprocessCommand());
         File errorLog = new File("communication_mod_errors.log");
         builder.redirectError(ProcessBuilder.Redirect.appendTo(errorLog));
