@@ -1,6 +1,6 @@
 ## Changelog ##
 
-#### Master ####
+#### v1.0.2 ####
 * Added BaseMod as a mod dependency (so now you can't load them in the wrong order)
 
 #### v1.0.1 ####
