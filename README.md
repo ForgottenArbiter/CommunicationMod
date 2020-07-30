@@ -96,3 +96,17 @@ CommunicationMod launches a specified process and communicates with this process
 - Twitch plays Slay the Spire
 - Slay the Spire AIs
 - Streamers can display detailed information about the current run while in game
+
+## Frequently asked questions
+
+- How do I debug my process?
+
+Communication Mod captures both the stderr and stdout of the external process. All messages sent to stdout are included in the game log, which is displayed in a window by ModTheSpire. All messages sent to the process by Communication Mod are also visible in the game log. The stdout of the external process is logged in a file named communication_mod_errors.log. Instead of printing debug information to stdout, try using a log file.
+
+- When I start the external process, the game hangs for 10 seconds, and then the external process quits. What do I do?
+
+Communication Mod is probably not receiving a ready signal. Make sure your process sends "Ready\n" to stdout when it is ready to receive commands from Communication Mod. If this is not the problem, there is likely some issue with the command used to start the process. Check communication_mod_errors.log to help debug these kinds of issues.
+
+- Can I get some example code to help get started with the Communication Mod protocol?
+
+Try looking at [spirecomm](https://github.com/ForgottenArbiter/spirecomm), the Python package I wrote to interface with Communication Mod.
