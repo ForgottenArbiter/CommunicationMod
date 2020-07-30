@@ -186,7 +186,7 @@ public class CommandExecutor {
     }
 
     public static boolean isStartCommandAvailable() {
-        return !isInDungeon();
+        return !isInDungeon() && CardCrawlGame.mainMenuScreen != null;
     }
 
     private static void executeStateCommand() {
