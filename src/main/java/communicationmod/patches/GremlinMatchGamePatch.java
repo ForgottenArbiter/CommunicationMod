@@ -6,6 +6,7 @@ import com.evacipated.cardcrawl.modthespire.patcher.PatchingException;
 import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.cards.CardGroup;
 import com.megacrit.cardcrawl.events.shrines.GremlinMatchGame;
+import com.megacrit.cardcrawl.helpers.Hitbox;
 import communicationmod.GameStateListener;
 import javassist.CannotCompileException;
 import javassist.CtBehavior;
@@ -15,6 +16,15 @@ import java.util.*;
 public class GremlinMatchGamePatch {
 
     public static HashMap<UUID, Integer> cardPositions;
+    public static CardGroup cards;
+    public static Set<UUID> revealedCards;
+
+    public static ArrayList<AbstractCard> getOrderedCards() {
+        ArrayList<AbstractCard> returnedCards = new ArrayList<>(cards.group);
+        returnedCards.sort(Comparator.comparingInt(c -> cardPositions.get(c.uuid)));
+        returnedCards.removeIf(c -> !c.isFlipped);
+        return returnedCards;
+    }
 
     @SpirePatch(
             clz=GremlinMatchGame.class,
@@ -23,7 +33,8 @@ public class GremlinMatchGamePatch {
     public static class InitializeCardsPatch {
 
         public static void Postfix(GremlinMatchGame _instance) {
-            CardGroup cards = (CardGroup) ReflectionHacks.getPrivate(_instance, GremlinMatchGame.class, "cards");
+            cards = (CardGroup) ReflectionHacks.getPrivate(_instance, GremlinMatchGame.class, "cards");
+            revealedCards = new HashSet<>();
             // If 0 is top left and 11 is bottom right, the positions of the cards in the result array are:
             // [0, 5, 10, 3, 4, 9, 2, 7, 8, 1, 6, 11]. We want to store the initial positions for easy reference.
             // Cards can be removed from the card group, so it is easier to just calculate them at the start.
@@ -38,9 +49,43 @@ public class GremlinMatchGamePatch {
                 System.out.println(currentCard.cardID);
             }
         }
-
     }
 
+    @SpirePatch(
+            clz=GremlinMatchGame.class,
+            method="updateMatchGameLogic"
+    )
+    public static class HoverCardPatch {
+
+        public static boolean doHover = false;
+        public static AbstractCard hoverCard = null;
+
+        @SpireInsertPatch(
+                locator=Locator.class,
+                localvars = {"c"}
+        )
+        public static void Insert(GremlinMatchGame _instance, AbstractCard c) {
+            if (doHover) {
+                if (c.equals(hoverCard)) {
+                    c.hb.hovered = true;
+                    doHover = false;
+                } else {
+                    c.hb.hovered = false;
+                }
+            }
+        }
+
+        private static class Locator extends SpireInsertLocator {
+            public int[] Locate(CtBehavior ctMethodToPatch) throws CannotCompileException, PatchingException {
+                Matcher matcher = new Matcher.MethodCallMatcher(Hitbox.class, "update");
+                int[] result = LineFinder.findInOrder(ctMethodToPatch, new ArrayList<Matcher>(), matcher);
+                result[0] += 1;
+                return result;
+            }
+        }
+
+
+    }
 
     @SpirePatch(
             clz=GremlinMatchGame.class,
@@ -68,6 +113,29 @@ public class GremlinMatchGamePatch {
             }
         }
 
+    }
+
+    @SpirePatch(
+            clz=GremlinMatchGame.class,
+            method="updateMatchGameLogic"
+    )
+    public static class CardIdentificationPatch {
+
+        @SpireInsertPatch(
+                locator=Locator.class,
+                localvars = {"c"}
+        )
+        public static void Insert(GremlinMatchGame _instance, AbstractCard c) {
+            revealedCards.add(c.uuid);
+        }
+
+        private static class Locator extends SpireInsertLocator {
+            public int[] Locate(CtBehavior ctMethodToPatch) throws CannotCompileException, PatchingException {
+                Matcher matcher = new Matcher.FieldAccessMatcher(AbstractCard.class, "isFlipped");
+                int[] matches = LineFinder.findAllInOrder(ctMethodToPatch, new ArrayList<Matcher>(), matcher);
+                return Arrays.copyOfRange(matches, 1, 2);
+            }
+        }
     }
 
     @SpirePatch(

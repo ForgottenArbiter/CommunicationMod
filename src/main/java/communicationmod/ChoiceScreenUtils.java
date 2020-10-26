@@ -790,10 +790,11 @@ public class ChoiceScreenUtils {
         } else if(AbstractDungeon.getCurrRoom().event instanceof GremlinWheelGame) {
             choiceList.add("spin");
         } else if(AbstractDungeon.getCurrRoom().event instanceof GremlinMatchGame) {
-            GremlinMatchGame event = (GremlinMatchGame) (AbstractDungeon.getCurrRoom().event);
-            CardGroup gameCardGroup = (CardGroup) ReflectionHacks.getPrivate(event, GremlinMatchGame.class, "cards");
-            for (AbstractCard c : gameCardGroup.group) {
-                if (c.isFlipped) {
+            ArrayList<AbstractCard> pickableCards = GremlinMatchGamePatch.getOrderedCards();
+            for (AbstractCard c : pickableCards) {
+                if (GremlinMatchGamePatch.revealedCards.contains(c.uuid)) {
+                    choiceList.add(c.cardID);
+                } else {
                     choiceList.add(String.format("card%d", GremlinMatchGamePatch.cardPositions.get(c.uuid)));
                 }
             }
@@ -810,16 +811,9 @@ public class ChoiceScreenUtils {
             ReflectionHacks.setPrivate(event, GremlinWheelGame.class, "buttonPressed", true);
             CardCrawlGame.sound.play("WHEEL");
         } else if (AbstractDungeon.getCurrRoom().event instanceof GremlinMatchGame) {
-            GremlinMatchGame event = (GremlinMatchGame) AbstractDungeon.getCurrRoom().event;
-            CardGroup gameCardGroup = (CardGroup) ReflectionHacks.getPrivate(event, GremlinMatchGame.class, "cards");
-            ArrayList<AbstractCard> pickable = new ArrayList<>();
-            for (AbstractCard c : gameCardGroup.group) {
-                if (c.isFlipped) {
-                    pickable.add(c);
-                }
-            }
-            AbstractCard chosenCard = pickable.get(choice);
-            setCursorPosition(chosenCard.hb.cX, Settings.HEIGHT - chosenCard.hb.cY);
+            ArrayList<AbstractCard> pickable = GremlinMatchGamePatch.getOrderedCards();
+            GremlinMatchGamePatch.HoverCardPatch.hoverCard = pickable.get(choice);
+            GremlinMatchGamePatch.HoverCardPatch.doHover = true;
             InputHelper.justClickedLeft = true;
         }
     }
