@@ -1,5 +1,11 @@
 ## Changelog ##
 
+#### v1.0.3 ####
+* Match and Keep! no longer hijacks the cursor
+* Match and Keep! no longer hangs when using SuperFastMode
+* Improved Match and Keep! event option descriptions and ordering
+* Do not crash if a start command is sent before Communication Mod is ready
+
 #### v1.0.2 ####
 * Added BaseMod as a mod dependency (so now you can't load them in the wrong order)
 
