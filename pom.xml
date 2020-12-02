@@ -13,9 +13,9 @@
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <SlayTheSpire.version>07-30-2020</SlayTheSpire.version>
-        <ModTheSpire.version>3.15.0</ModTheSpire.version>
-        <BaseMod.version>5.17.0</BaseMod.version>
+        <SlayTheSpire.version>11-30-2020</SlayTheSpire.version>
+        <ModTheSpire.version>3.18.1</ModTheSpire.version>
+        <BaseMod.version>5.27.0</BaseMod.version>
     </properties>
 
     <dependencies>
