@@ -1,5 +1,9 @@
 ## Changelog ##
 
+#### v1.0.4 ####
+* Added low verbosity option (set verbose=false in config file)
+* Fixed compatibility with v2.2 of Slay the Spire
+
 #### v1.0.3 ####
 * Match and Keep! no longer hijacks the cursor
 * Match and Keep! no longer hangs when using SuperFastMode
