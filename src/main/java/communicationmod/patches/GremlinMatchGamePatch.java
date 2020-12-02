@@ -7,6 +7,7 @@ import com.megacrit.cardcrawl.cards.AbstractCard;
 import com.megacrit.cardcrawl.cards.CardGroup;
 import com.megacrit.cardcrawl.events.shrines.GremlinMatchGame;
 import com.megacrit.cardcrawl.helpers.Hitbox;
+import com.megacrit.cardcrawl.helpers.input.InputHelper;
 import communicationmod.GameStateListener;
 import javassist.CannotCompileException;
 import javassist.CtBehavior;
@@ -45,8 +46,6 @@ public class GremlinMatchGamePatch {
                 int target_y = i % 3;
                 int position = target_x + 4 * target_y;
                 cardPositions.put(currentCard.uuid, position);
-                System.out.println(currentCard.uuid);
-                System.out.println(currentCard.cardID);
             }
         }
     }
@@ -68,6 +67,7 @@ public class GremlinMatchGamePatch {
             if (doHover) {
                 if (c.equals(hoverCard)) {
                     c.hb.hovered = true;
+                    InputHelper.justClickedLeft = true;
                     doHover = false;
                 } else {
                     c.hb.hovered = false;

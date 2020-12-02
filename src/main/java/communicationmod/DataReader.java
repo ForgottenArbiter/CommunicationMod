@@ -12,10 +12,12 @@ public class DataReader implements Runnable{
     private final BlockingQueue<String> queue;
     private final InputStream stream;
     private static final Logger logger = LogManager.getLogger(DataReader.class.getName());
+    private boolean verbose;
 
-    public DataReader (BlockingQueue<String> queue, InputStream stream) {
+    public DataReader (BlockingQueue<String> queue, InputStream stream, boolean verbose) {
         this.queue = queue;
         this.stream = stream;
+        this.verbose = verbose;
     }
 
     public void run() {
@@ -32,7 +34,9 @@ public class DataReader implements Runnable{
                     inputBuffer.append((char) nextChar);
                 }
                 if (inputBuffer.length() > 0) {
-                    logger.info("Received message: " + inputBuffer.toString());
+                    if (verbose) {
+                        logger.info("Received message: " + inputBuffer.toString());
+                    }
                     queue.put(inputBuffer.toString());
                 }
             } catch(IOException e){

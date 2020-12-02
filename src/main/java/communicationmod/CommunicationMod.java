@@ -46,9 +46,11 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
     private static SpireConfig communicationConfig;
     private static final String COMMAND_OPTION = "command";
     private static final String GAME_START_OPTION = "runAtGameStart";
+    private static final String VERBOSE_OPTION = "verbose";
     private static final String INITIALIZATION_TIMEOUT_OPTION = "maxInitializationTimeout";
     private static final String DEFAULT_COMMAND = "";
     private static final long DEFAULT_TIMEOUT = 10L;
+    private static final boolean DEFAULT_VERBOSITY = true;
 
     public CommunicationMod(){
         BaseMod.subscribe(this);
@@ -57,6 +59,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
             Properties defaults = new Properties();
             defaults.put(GAME_START_OPTION, Boolean.toString(false));
             defaults.put(INITIALIZATION_TIMEOUT_OPTION, Long.toString(DEFAULT_TIMEOUT));
+            defaults.put(VERBOSE_OPTION, Boolean.toString(DEFAULT_VERBOSITY));
             communicationConfig = new SpireConfig("CommunicationMod", "config", defaults);
             String command = communicationConfig.getString(COMMAND_OPTION);
             // I want this to always be saved to the file so people can set it more easily.
@@ -182,10 +185,10 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
 
     private void startCommunicationThreads() {
         writeQueue = new LinkedBlockingQueue<>();
-        writeThread = new Thread(new DataWriter(writeQueue, listener.getOutputStream()));
+        writeThread = new Thread(new DataWriter(writeQueue, listener.getOutputStream(), getVerbosityOption()));
         writeThread.start();
         readQueue = new LinkedBlockingQueue<>();
-        readThread = new Thread(new DataReader(readQueue, listener.getInputStream()));
+        readThread = new Thread(new DataReader(readQueue, listener.getInputStream(), getVerbosityOption()));
         readThread.start();
     }
 
@@ -253,6 +256,13 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
             return DEFAULT_TIMEOUT;
         }
         return (long)communicationConfig.getInt(INITIALIZATION_TIMEOUT_OPTION);
+    }
+
+    private static boolean getVerbosityOption() {
+        if (communicationConfig == null) {
+            return DEFAULT_VERBOSITY;
+        }
+        return communicationConfig.getBool(VERBOSE_OPTION);
     }
 
     private boolean startExternalProcess() {

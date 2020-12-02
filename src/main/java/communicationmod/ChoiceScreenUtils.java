@@ -814,7 +814,6 @@ public class ChoiceScreenUtils {
             ArrayList<AbstractCard> pickable = GremlinMatchGamePatch.getOrderedCards();
             GremlinMatchGamePatch.HoverCardPatch.hoverCard = pickable.get(choice);
             GremlinMatchGamePatch.HoverCardPatch.doHover = true;
-            InputHelper.justClickedLeft = true;
         }
     }
 

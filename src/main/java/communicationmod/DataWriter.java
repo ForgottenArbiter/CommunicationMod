@@ -11,11 +11,13 @@ public class DataWriter implements Runnable {
 
     private final BlockingQueue<String> queue;
     private final OutputStream stream;
+    private boolean verbose;
     private static final Logger logger = LogManager.getLogger(DataWriter.class.getName());
 
-    public DataWriter(BlockingQueue<String> queue, OutputStream stream) {
+    public DataWriter(BlockingQueue<String> queue, OutputStream stream, boolean verbose) {
         this.queue = queue;
         this.stream = stream;
+        this.verbose = verbose;
     }
 
     public void run() {
@@ -23,7 +25,9 @@ public class DataWriter implements Runnable {
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 message = this.queue.take();
-                logger.info("Sending message: " + message);
+                if (verbose) {
+                    logger.info("Sending message: " + message);
+                }
                 stream.write(message.getBytes());
                 stream.write('\n');
                 stream.flush();
