@@ -4,6 +4,7 @@
 * Added mod config panel toggle for verbosity option
 * Added ethereal to cards in the game state
 * Added number of times damaged to the game state
+* Fixed a bug where the wrong act boss was sometimes displayed
 
 #### v1.0.4 ####
 * Added low verbosity option (set verbose=false in config file)
