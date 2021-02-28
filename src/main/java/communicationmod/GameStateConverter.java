@@ -616,6 +616,7 @@ public class GameStateConverter {
      * "rarity" (string): The name of the AbstractCard.CardRarity enum for the card
      * "has_target" (boolean): Whether the card requires a target to be played
      * "exhausts" (boolean): Whether the card exhausts when played
+     * "ethereal" (boolean): Whether the card is ethereal
      * @param card The card to convert
      * @return A card object
      */
@@ -636,6 +637,7 @@ public class GameStateConverter {
         jsonCard.put("rarity", card.rarity.name());
         jsonCard.put("has_target", card.target== AbstractCard.CardTarget.SELF_AND_ENEMY || card.target == AbstractCard.CardTarget.ENEMY);
         jsonCard.put("exhausts", card.exhaust);
+        jsonCard.put("ethereal", card.isEthereal);
         return jsonCard;
     }
 
