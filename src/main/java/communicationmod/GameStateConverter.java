@@ -107,7 +107,7 @@ public class GameStateConverter {
         state.put("max_hp", AbstractDungeon.player.maxHealth);
         state.put("floor", AbstractDungeon.floorNum);
         state.put("act", AbstractDungeon.actNum);
-        state.put("act_boss", AbstractDungeon.bossList.get(0));
+        state.put("act_boss", AbstractDungeon.bossKey);
         state.put("gold", AbstractDungeon.player.gold);
         state.put("seed", Settings.seed);
         state.put("class", AbstractDungeon.player.chosenClass.name());
