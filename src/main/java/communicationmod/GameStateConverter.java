@@ -499,6 +499,7 @@ public class GameStateConverter {
      * "monsters" (list): A list of the enemies in the combat, including dead enemies
      * "turn" (int): The current turn (or round) number of the combat.
      * "cards_discarded_this_turn" (int): The number of cards discarded this turn.
+     * "times_damaged" (int): The number of times the player has been damaged this combat (for Blood for Blood).
      * Note: The order of the draw pile is not currently randomized when sent to the client.
      * @return The combat state object
      */
@@ -540,6 +541,7 @@ public class GameStateConverter {
         state.put("player", convertPlayerToJson(AbstractDungeon.player));
         state.put("turn", GameActionManager.turn);
         state.put("cards_discarded_this_turn", GameActionManager.totalDiscardedThisTurn);
+        state.put("times_damaged", AbstractDungeon.player.damagedThisCombat);
         return state;
     }
 
