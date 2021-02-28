@@ -1,5 +1,10 @@
 ## Changelog ##
 
+#### v1.1.0 ####
+* Added mod config panel toggle for verbosity option
+* Added ethereal to cards in the game state
+* Added number of times damaged to the game state
+
 #### v1.0.4 ####
 * Added low verbosity option (set verbose=false in config file)
 * Fixed compatibility with v2.2 of Slay the Spire
