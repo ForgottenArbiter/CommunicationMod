@@ -25,6 +25,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class CommandExecutor {
 
@@ -78,7 +79,11 @@ public class CommandExecutor {
             case "wait":
                 executeWaitCommand(tokens);
                 return true;
-
+            case "nowait":
+                String[] remaining_tokens = Arrays.copyOfRange(tokens, 1, tokens.length);
+                executeCommand(String.join(" ",remaining_tokens));
+                GameStateListener.setTimeout(1);
+                return true;
             default:
                 logger.info("This should never happen.");
                 throw new InvalidCommandException("Command not recognized.");
@@ -112,6 +117,7 @@ public class CommandExecutor {
             availableCommands.add("key");
             availableCommands.add("click");
             availableCommands.add("wait");
+            availableCommands.add("nowait");
         }
         availableCommands.add("state");
         return availableCommands;

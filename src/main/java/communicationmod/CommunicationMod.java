@@ -16,8 +16,7 @@ import communicationmod.patches.InputActionPatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.lang.ProcessBuilder;
 import java.util.HashMap;
 import java.util.Properties;
@@ -52,6 +51,10 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
     private static final long DEFAULT_TIMEOUT = 10L;
     private static final boolean DEFAULT_VERBOSITY = true;
 
+    private static BufferedReader command_file;
+    private static boolean doneWithFile = false;
+    private static FileWriter command_log_file;
+
     public CommunicationMod(){
         BaseMod.subscribe(this);
 
@@ -68,8 +71,11 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
                 communicationConfig.save();
             }
             communicationConfig.save();
+            command_log_file = new FileWriter("cm_commands.log");
+            command_file = new BufferedReader(new FileReader(new File("tas_challenge_commands.txt")));
         } catch (IOException e) {
             e.printStackTrace();
+            command_file = new BufferedReader(new StringReader(""));
         }
 
         if(getRunOnGameStartOption()) {
@@ -87,9 +93,28 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
             writeThread.interrupt();
             readThread.interrupt();
         }
-        if(messageAvailable()) {
+        String file_command;
+        if (GameStateListener.isWaitingForCommand() && (file_command = getNextCommand()) != null) {
             try {
-                boolean stateChanged = CommandExecutor.executeCommand(readMessage());
+                boolean stateChanged = CommandExecutor.executeCommand(file_command);
+                logCommand(file_command);
+                System.out.println(file_command);
+                if(stateChanged) {
+                    GameStateListener.registerCommandExecution();
+                }
+            } catch (InvalidCommandException e) {
+                HashMap<String, Object> jsonError = new HashMap<>();
+                jsonError.put("error", e.getMessage());
+                jsonError.put("ready_for_command", GameStateListener.isWaitingForCommand());
+                Gson gson = new Gson();
+                System.out.println(gson.toJson(jsonError));
+            }
+        }
+        else if(doneWithFile && messageAvailable()) {
+            try {
+                String command = readMessage();
+                boolean stateChanged = CommandExecutor.executeCommand(command);
+                logCommand(command);
                 if(stateChanged) {
                     GameStateListener.registerCommandExecution();
                 }
@@ -103,6 +128,27 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
         }
     }
 
+    private static String getNextCommand() {
+        try {
+            String line = command_file.readLine();
+            doneWithFile = !command_file.ready();
+            return line;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static void logCommand(String command) {
+        try {
+            command_log_file.write(command.trim());
+            command_log_file.write("\n");
+            command_log_file.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void receivePostInitialize() {
         setUpOptionsMenu();
     }
@@ -111,7 +157,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
         if(!mustSendGameState && GameStateListener.checkForMenuStateChange()) {
             mustSendGameState = true;
         }
-        if(mustSendGameState) {
+        if(mustSendGameState && doneWithFile) {
             sendGameState();
             mustSendGameState = false;
         }
@@ -201,6 +247,12 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
         logger.info("Shutting down child process...");
         if(listener != null) {
             listener.destroy();
+        }
+        try {
+            command_log_file.close();
+            command_file.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
