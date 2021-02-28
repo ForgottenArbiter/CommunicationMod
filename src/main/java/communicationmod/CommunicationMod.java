@@ -180,6 +180,22 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
                 975, 700, Settings.CREAM_COLOR, FontHelper.charDescFont,
                 settingsPanel, modLabel -> {});
         settingsPanel.addUIElement(editProcessLabel);
+
+        ModLabeledToggleButton verbosityOption = new ModLabeledToggleButton(
+                "Suppress verbose log output",
+                350, 500, Settings.CREAM_COLOR, FontHelper.charDescFont,
+                getVerbosityOption(), settingsPanel, modLabel -> {},
+                modToggleButton -> {
+                    if (communicationConfig != null) {
+                        communicationConfig.setBool(VERBOSE_OPTION, modToggleButton.enabled);
+                        try {
+                            communicationConfig.save();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+        settingsPanel.addUIElement(verbosityOption);
         BaseMod.registerModBadge(ImageMaster.loadImage("Icon.png"),"Communication Mod", "Forgotten Arbiter", null, settingsPanel);
     }
 
