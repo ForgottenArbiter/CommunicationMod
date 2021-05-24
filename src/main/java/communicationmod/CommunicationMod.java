@@ -19,6 +19,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ProcessBuilder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
@@ -28,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import static java.lang.Thread.sleep;
 
 @SpireInitializer
-public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSubscriber, PostDungeonUpdateSubscriber, PreUpdateSubscriber {
+public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSubscriber, PostDungeonUpdateSubscriber, PreUpdateSubscriber, OnStateChangeSubscriber {
 
     private static Process listener;
     private static StringBuilder inputBuffer = new StringBuilder();
@@ -42,6 +43,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
     private static final String AUTHOR = "Forgotten Arbiter";
     private static final String DESCRIPTION = "This mod communicates with an external program to play Slay the Spire.";
     public static boolean mustSendGameState = false;
+    private static ArrayList<OnStateChangeSubscriber> onStateChangeSubscribers;
 
     private static SpireConfig communicationConfig;
     private static final String COMMAND_OPTION = "command";
@@ -54,7 +56,8 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
 
     public CommunicationMod(){
         BaseMod.subscribe(this);
-
+        onStateChangeSubscribers = new ArrayList<>();
+        readQueue = new LinkedBlockingQueue<>();
         try {
             Properties defaults = new Properties();
             defaults.put(GAME_START_OPTION, Boolean.toString(false));
@@ -103,6 +106,24 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
         }
     }
 
+    public static void subscribe(OnStateChangeSubscriber sub) {
+        onStateChangeSubscribers.add(sub);
+    }
+
+    public static void publishOnGameStateChange() {
+        for(OnStateChangeSubscriber sub : onStateChangeSubscribers) {
+            sub.receiveOnStateChange();
+        }
+    }
+
+    public void receiveOnStateChange() {
+        sendGameState();
+    }
+
+    public static void queueCommand(String command) {
+        readQueue.add(command);
+    }
+
     public void receivePostInitialize() {
         setUpOptionsMenu();
     }
@@ -112,7 +133,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
             mustSendGameState = true;
         }
         if(mustSendGameState) {
-            sendGameState();
+            publishOnGameStateChange();
             mustSendGameState = false;
         }
         InputActionPatch.doKeypress = false;
@@ -203,7 +224,6 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
         writeQueue = new LinkedBlockingQueue<>();
         writeThread = new Thread(new DataWriter(writeQueue, listener.getOutputStream(), getVerbosityOption()));
         writeThread.start();
-        readQueue = new LinkedBlockingQueue<>();
         readThread = new Thread(new DataReader(readQueue, listener.getInputStream(), getVerbosityOption()));
         readThread.start();
     }
