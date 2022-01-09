@@ -11,6 +11,9 @@ import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.helpers.SeedHelper;
 import com.megacrit.cardcrawl.helpers.TrialHelper;
+import com.megacrit.cardcrawl.helpers.controller.CInputAction;
+import com.megacrit.cardcrawl.helpers.controller.CInputActionSet;
+import com.megacrit.cardcrawl.helpers.controller.CInputHelper;
 import com.megacrit.cardcrawl.helpers.input.InputAction;
 import com.megacrit.cardcrawl.helpers.input.InputActionSet;
 import com.megacrit.cardcrawl.helpers.input.InputHelper;
@@ -20,6 +23,7 @@ import com.megacrit.cardcrawl.potions.PotionSlot;
 import com.megacrit.cardcrawl.random.Random;
 import com.megacrit.cardcrawl.relics.AbstractRelic;
 import com.megacrit.cardcrawl.rooms.*;
+import communicationmod.patches.CInputActionPatch;
 import communicationmod.patches.InputActionPatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -73,6 +77,12 @@ public class CommandExecutor {
             case "key":
                 executeKeyCommand(tokens);
                 return true;
+            case "pause":
+                executePauseCommand();;
+                return false;
+            case "controller":
+                executeControllerCommand(tokens);
+                return true;
             case "click":
                 executeClickCommand(tokens);
                 return true;
@@ -113,12 +123,12 @@ public class CommandExecutor {
         if (isStartCommandAvailable()) {
             availableCommands.add("start");
         }
-        if (isInDungeon()) {
-            availableCommands.add("key");
-            availableCommands.add("click");
-            availableCommands.add("wait");
-            availableCommands.add("nowait");
-        }
+        availableCommands.add("key");
+        availableCommands.add("controller");
+        availableCommands.add("click");
+        availableCommands.add("wait");
+        availableCommands.add("nowait");
+        availableCommands.add("pause");
         availableCommands.add("state");
         return availableCommands;
     }
@@ -395,7 +405,7 @@ public class CommandExecutor {
         if (keycode == -1) {
             throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.INVALID_ARGUMENT, tokens[1]);
         }
-        int timeout = 100;
+        int timeout = 500;
         if (tokens.length >= 3) {
             try {
                 timeout = Integer.parseInt(tokens[2]);
@@ -411,6 +421,34 @@ public class CommandExecutor {
         InputHelper.updateFirst();
         GameStateListener.setTimeout(timeout);
     }
+
+
+    private static void executeControllerCommand(String[] tokens) throws InvalidCommandException {
+        if (tokens.length < 2) {
+            throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.MISSING_ARGUMENT);
+        }
+        int keycode = getControllerKeycode(tokens[1].toUpperCase());
+        if (keycode == -1) {
+            throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.INVALID_ARGUMENT, tokens[1]);
+        }
+        int timeout = 500;
+        if (tokens.length >= 3) {
+            try {
+                timeout = Integer.parseInt(tokens[2]);
+            } catch (NumberFormatException e) {
+                throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.INVALID_ARGUMENT, tokens[2]);
+            }
+            if(timeout < 0) {
+                throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.OUT_OF_BOUNDS, tokens[2]);
+            }
+        }
+        Settings.isControllerMode = true;
+        CInputActionPatch.doKeypress = true;
+        CInputActionPatch.key = keycode;
+        CInputHelper.updateFirst();
+        GameStateListener.setTimeout(timeout);
+    }
+
 
     private static void executeClickCommand(String[] tokens) throws InvalidCommandException {
         if (tokens.length < 4) {
@@ -472,6 +510,82 @@ public class CommandExecutor {
             throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.OUT_OF_BOUNDS, tokens[1]);
         }
         GameStateListener.setTimeout(timeout);
+    }
+
+    private static void executePauseCommand() {
+        CommunicationMod.gamePaused = !CommunicationMod.gamePaused;
+    }
+
+    private static int getControllerKeycode(String keyName) {
+        CInputAction action;
+        switch (keyName) {
+            case "SELECT":
+                action = CInputActionSet.select;
+                break;
+            case "CONFIRM":
+                action = CInputActionSet.cancel;
+                break;
+            case "TOP_PANEL":
+                action = CInputActionSet.topPanel;
+                break;
+            case "PROCEED":
+                action = CInputActionSet.proceed;
+                break;
+            case "PEEK":
+                action = CInputActionSet.peek;
+                break;
+            case "PAGE_LEFT_VIEW_DECK":
+            case "DECK":
+                action = CInputActionSet.pageLeftViewDeck;
+                break;
+            case "EXHAUST":
+            case "PAGE_RIGHT_VIEW_EXHAUST":
+                action = CInputActionSet.pageRightViewExhaust;
+                break;
+            case "MAP":
+                action = CInputActionSet.map;
+                break;
+            case "SETTINGS":
+                action = CInputActionSet.settings;
+                break;
+            case "DRAW_PILE":
+                action = CInputActionSet.drawPile;
+                break;
+            case "DISCARD_PILE":
+                action = CInputActionSet.discardPile;
+                break;
+            case "UP":
+                action = CInputActionSet.up;
+                break;
+            case "DOWN":
+                action = CInputActionSet.down;
+                break;
+            case "LEFT":
+                action = CInputActionSet.left;
+                break;
+            case "RIGHT":
+                action = CInputActionSet.right;
+                break;
+            case "INSPECT_UP":
+                action = CInputActionSet.inspectUp;
+                break;
+            case "INSPECT_DOWN":
+                action = CInputActionSet.inspectDown;
+                break;
+            case "INSPECT_LEFT":
+                action = CInputActionSet.inspectLeft;
+                break;
+            case "INSPECT_RIGHT":
+                action = CInputActionSet.inspectRight;
+                break;
+            default:
+                action = null;
+        }
+        if (action == null) {
+            return -1;
+        } else {
+            return (int) ReflectionHacks.getPrivate(action, CInputAction.class, "keycode");
+        }
     }
 
     private static int getKeycode(String keyName) {

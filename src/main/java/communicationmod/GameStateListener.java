@@ -98,6 +98,12 @@ public class GameStateListener {
         if (blocked) {
             return false;
         }
+        if (timeout > 0) {
+            timeout -= 1;
+            if(timeout == 0) {
+                return true;
+            }
+        }
         hasPresentedOutOfGameState = false;
         AbstractDungeon.CurrentScreen newScreen = AbstractDungeon.screen;
         boolean newScreenUp = AbstractDungeon.isScreenUp;
@@ -178,12 +184,6 @@ public class GameStateListener {
         if (externalChange && inCombat && newScreenUp) {
             return true;
         }
-        if (timeout > 0) {
-            timeout -= 1;
-            if(timeout == 0) {
-                return true;
-            }
-        }
         return false;
     }
 
@@ -195,9 +195,17 @@ public class GameStateListener {
      */
     public static boolean checkForMenuStateChange() {
         boolean stateChange = false;
-        if (!hasPresentedOutOfGameState && CardCrawlGame.mode == CardCrawlGame.GameMode.CHAR_SELECT && CardCrawlGame.mainMenuScreen != null) {
-            stateChange = true;
-            hasPresentedOutOfGameState = true;
+        if (CardCrawlGame.mode == CardCrawlGame.GameMode.CHAR_SELECT && CardCrawlGame.mainMenuScreen != null) {
+            if (!hasPresentedOutOfGameState) {
+                stateChange = true;
+                hasPresentedOutOfGameState = true;
+            }
+            if (timeout > 0) {
+                timeout -= 1;
+                if(timeout == 0) {
+                    stateChange = true;
+                }
+            }
         }
         if (stateChange) {
             externalChange = false;

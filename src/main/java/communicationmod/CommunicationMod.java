@@ -5,13 +5,17 @@ import basemod.interfaces.PostDungeonUpdateSubscriber;
 import basemod.interfaces.PostInitializeSubscriber;
 import basemod.interfaces.PostUpdateSubscriber;
 import basemod.interfaces.PreUpdateSubscriber;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.evacipated.cardcrawl.modthespire.lib.SpireConfig;
 import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
+import com.evacipated.cardcrawl.modthespire.lib.SpireReturn;
 import com.google.gson.Gson;
 import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.helpers.FontHelper;
 import com.megacrit.cardcrawl.helpers.ImageMaster;
+import communicationmod.patches.CInputActionPatch;
 import communicationmod.patches.InputActionPatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,6 +36,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
     private static Process listener;
     private static StringBuilder inputBuffer = new StringBuilder();
     public static boolean messageReceived = false;
+    public static boolean gamePaused = false;
     private static final Logger logger = LogManager.getLogger(CommunicationMod.class.getName());
     private static Thread writeThread;
     private static BlockingQueue<String> writeQueue;
@@ -41,6 +46,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
     private static final String AUTHOR = "Forgotten Arbiter";
     private static final String DESCRIPTION = "This mod communicates with an external program to play Slay the Spire.";
     public static boolean mustSendGameState = false;
+    private static int frameCount = 0;
 
     private static SpireConfig communicationConfig;
     private static final String COMMAND_OPTION = "command";
@@ -71,8 +77,8 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
                 communicationConfig.save();
             }
             communicationConfig.save();
-            command_log_file = new FileWriter("cm_commands.log");
-            command_file = new BufferedReader(new FileReader(new File("tas_challenge_commands.txt")));
+            command_log_file = new FileWriter("tas_heart_commands.log");
+            command_file = new BufferedReader(new FileReader(new File("tas_heart_commands.txt")));
         } catch (IOException e) {
             e.printStackTrace();
             command_file = new BufferedReader(new StringReader(""));
@@ -154,14 +160,29 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
     }
 
     public void receivePostUpdate() {
-        if(!mustSendGameState && GameStateListener.checkForMenuStateChange()) {
-            mustSendGameState = true;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.END)) {
+            frameCount = 0;
+            try {
+                command_file.close();
+                command_file = new BufferedReader(new FileReader(new File("tas_heart_commands.txt")));
+            } catch (IOException e) {
+                e.printStackTrace();
+                command_file = new BufferedReader(new StringReader(""));
+            }
+        }
+        if (GameStateListener.checkForMenuStateChange()) {
+            if (!mustSendGameState && doneWithFile) {
+                mustSendGameState = true;
+            }
         }
         if(mustSendGameState && doneWithFile) {
             sendGameState();
             mustSendGameState = false;
         }
         InputActionPatch.doKeypress = false;
+        CInputActionPatch.doKeypress = false;
+        frameCount += 1;
+        logger.info(frameCount);
     }
 
     public void receivePostDungeonUpdate() {
@@ -367,6 +388,10 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
             }
         }
         return false;
+    }
+
+    public static float getConstantDelta() {
+        return 1.0f / Settings.MAX_FPS;
     }
 
 }
