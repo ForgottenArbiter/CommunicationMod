@@ -57,6 +57,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
     public CommunicationMod(){
         BaseMod.subscribe(this);
         onStateChangeSubscribers = new ArrayList<>();
+        CommunicationMod.subscribe(this);
         readQueue = new LinkedBlockingQueue<>();
         try {
             Properties defaults = new Properties();
