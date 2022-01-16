@@ -1,5 +1,9 @@
 ## Changelog ##
 
+#### v1.2.0 ####
+* Shade in gson in a way that avoids mod conflicts
+* Add java hooks for using Communication Mod as a mod dependency
+
 #### v1.1.0 ####
 * Added mod config panel toggle for verbosity option
 * Added ethereal to cards in the game state
