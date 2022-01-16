@@ -1,5 +1,8 @@
 ## Changelog ##
 
+#### v1.2.1 ####
+* Fix an issue where the external process was not sent state
+
 #### v1.2.0 ####
 * Shade in gson in a way that avoids mod conflicts
 * Add java hooks for using Communication Mod as a mod dependency
