@@ -12,8 +12,9 @@ public class GetDeltaTimePatch {
         public static ExprEditor Instrument() {
             return new ExprEditor() {
                 public void edit(FieldAccess f) throws CannotCompileException {
-                    if (f.getFieldName().equals("deltaTime"))
+                    if (f.getFieldName().equals("deltaTime")) {
                         f.replace("{ $_ = communicationmod.CommunicationMod.getConstantDelta(); }");
+                    }
                 }
             };
         }

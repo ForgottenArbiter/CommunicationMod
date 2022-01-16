@@ -1,8 +1,11 @@
 package communicationmod;
 
+import basemod.ReflectionHacks;
 import com.megacrit.cardcrawl.actions.GameActionManager;
 import com.megacrit.cardcrawl.core.CardCrawlGame;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
+import com.megacrit.cardcrawl.events.AbstractEvent;
+import com.megacrit.cardcrawl.events.GenericEventDialog;
 import com.megacrit.cardcrawl.neow.NeowRoom;
 import com.megacrit.cardcrawl.rooms.AbstractRoom;
 import com.megacrit.cardcrawl.rooms.EventRoom;
@@ -95,14 +98,14 @@ public class GameStateListener {
      * @return whether the state is stable
      */
     private static boolean hasDungeonStateChanged() {
-        if (blocked) {
-            return false;
-        }
         if (timeout > 0) {
             timeout -= 1;
             if(timeout == 0) {
                 return true;
             }
+        }
+        if (blocked) {
+            return false;
         }
         hasPresentedOutOfGameState = false;
         AbstractDungeon.CurrentScreen newScreen = AbstractDungeon.screen;
@@ -129,11 +132,20 @@ public class GameStateListener {
         }
         // In event rooms, we need to wait for the event wait timer to reach 0 before we can accurately assess its state.
         AbstractRoom currentRoom = AbstractDungeon.getCurrRoom();
-        if ((currentRoom instanceof EventRoom
+        if (currentRoom instanceof EventRoom
                 || currentRoom instanceof NeowRoom
-                || (currentRoom instanceof VictoryRoom && ((VictoryRoom) currentRoom).eType == VictoryRoom.EventType.HEART))
-                && AbstractDungeon.getCurrRoom().event.waitTimer != 0.0F) {
-            return false;
+                || (currentRoom instanceof VictoryRoom && ((VictoryRoom) currentRoom).eType == VictoryRoom.EventType.HEART)) {
+            AbstractEvent event = AbstractDungeon.getCurrRoom().event;
+            if (event.waitTimer != 0.0F) {
+                return false;
+            }
+            // We also need to wait for this timer to hit 0 before we can use a controller to select options.
+            if (event.imageEventText != null) {
+                float animateTimer = (float) ReflectionHacks.getPrivate(event.imageEventText, GenericEventDialog.class, "animateTimer");
+                if (animateTimer > 0.0f) {
+                    return false;
+                }
+            }
         }
         // The state has always changed in some way when one of these variables is different.
         // However, the state may not be finished changing, so we need to do some additional checks.
@@ -210,6 +222,7 @@ public class GameStateListener {
         if (stateChange) {
             externalChange = false;
             waitingForCommand = true;
+            timeout = 0;
         }
         return stateChange;
     }

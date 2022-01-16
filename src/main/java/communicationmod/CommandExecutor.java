@@ -7,6 +7,7 @@ import com.megacrit.cardcrawl.cards.CardQueueItem;
 import com.megacrit.cardcrawl.characters.AbstractPlayer;
 import com.megacrit.cardcrawl.characters.CharacterManager;
 import com.megacrit.cardcrawl.core.CardCrawlGame;
+import com.megacrit.cardcrawl.core.GameCursor;
 import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.helpers.SeedHelper;
@@ -23,6 +24,7 @@ import com.megacrit.cardcrawl.potions.PotionSlot;
 import com.megacrit.cardcrawl.random.Random;
 import com.megacrit.cardcrawl.relics.AbstractRelic;
 import com.megacrit.cardcrawl.rooms.*;
+import com.megacrit.cardcrawl.unlock.UnlockTracker;
 import communicationmod.patches.CInputActionPatch;
 import communicationmod.patches.InputActionPatch;
 import org.apache.logging.log4j.LogManager;
@@ -336,6 +338,16 @@ public class CommandExecutor {
         ChoiceScreenUtils.pressCancelButton();
     }
 
+    private static void unlockBosses(String[] bosslist, int unlockLevel) {
+        for (int i = 0; i < unlockLevel; i++) {
+            if (i >= 3) {
+                break;
+            }
+            UnlockTracker.unlockPref.putInteger(bosslist[i], 2);
+            UnlockTracker.bossSeenPref.putInteger(bosslist[i], 1);
+        }
+    }
+
     private static void executeStartCommand(String[] tokens) throws InvalidCommandException {
         if (tokens.length < 2) {
             throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.MISSING_ARGUMENT);
@@ -383,6 +395,28 @@ public class CommandExecutor {
         if(!seedSet) {
             seed = SeedHelper.generateUnoffensiveSeed(new Random(System.nanoTime()));
         }
+        String[] expectedBaseUnlocks = {"The Silent", "Defect", "Watcher"};
+        String[] firstBossUnlocks = {"GUARDIAN", "GHOST", "SLIME"};
+        String[] secondBossUnlocks = {"CHAMP", "AUTOMATON", "COLLECTOR"};
+        String[] thirdBossUnlocks = {"CROW", "DONUT", "WIZARD"};
+        UnlockTracker.unlockPref.data.clear();
+        UnlockTracker.bossSeenPref.data.clear();
+        for (String key : expectedBaseUnlocks) {
+            UnlockTracker.unlockPref.putInteger(key, 2);
+        }
+        unlockBosses(firstBossUnlocks, 3);
+        unlockBosses(secondBossUnlocks, 2);
+        unlockBosses(thirdBossUnlocks, 1);
+        UnlockTracker.resetUnlockProgress(AbstractPlayer.PlayerClass.IRONCLAD);
+        UnlockTracker.unlockProgress.putInteger("IRONCLADUnlockLevel", 1);
+        UnlockTracker.resetUnlockProgress(AbstractPlayer.PlayerClass.THE_SILENT);
+        UnlockTracker.unlockProgress.putInteger("THE_SILENTUnlockLevel", 5);
+        UnlockTracker.resetUnlockProgress(AbstractPlayer.PlayerClass.DEFECT);
+        UnlockTracker.unlockProgress.putInteger("DEFECTUnlockLevel", 0);
+        UnlockTracker.resetUnlockProgress(AbstractPlayer.PlayerClass.WATCHER);
+        UnlockTracker.unlockProgress.putInteger("WATCHERUnlockLevel", 0);
+        UnlockTracker.retroactiveUnlock();
+        UnlockTracker.refresh();
         Settings.seed = seed;
         Settings.seedSet = seedSet;
         AbstractDungeon.generateSeeds();
@@ -467,6 +501,8 @@ public class CommandExecutor {
         } catch (NumberFormatException e) {
             throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.INVALID_ARGUMENT, tokens[3]);
         }
+        Settings.isControllerMode = false;
+        GameCursor.hidden = false;
         x = x * Settings.scale;
         y = y * Settings.scale;
         Gdx.input.setCursorPosition((int)x, (int)y);
@@ -514,6 +550,8 @@ public class CommandExecutor {
 
     private static void executePauseCommand() {
         CommunicationMod.gamePaused = !CommunicationMod.gamePaused;
+        logger.info(CommunicationMod.frameCount);
+        logger.info(CardCrawlGame.playtime);
     }
 
     private static int getControllerKeycode(String keyName) {
@@ -522,7 +560,7 @@ public class CommandExecutor {
             case "SELECT":
                 action = CInputActionSet.select;
                 break;
-            case "CONFIRM":
+            case "CANCEL":
                 action = CInputActionSet.cancel;
                 break;
             case "TOP_PANEL":

@@ -1,20 +1,23 @@
 package communicationmod;
 
 import basemod.*;
-import basemod.interfaces.PostDungeonUpdateSubscriber;
-import basemod.interfaces.PostInitializeSubscriber;
-import basemod.interfaces.PostUpdateSubscriber;
-import basemod.interfaces.PreUpdateSubscriber;
+import basemod.interfaces.*;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.evacipated.cardcrawl.modthespire.lib.SpireConfig;
 import com.evacipated.cardcrawl.modthespire.lib.SpireInitializer;
 import com.evacipated.cardcrawl.modthespire.lib.SpireReturn;
 import com.google.gson.Gson;
+import com.megacrit.cardcrawl.core.CardCrawlGame;
 import com.megacrit.cardcrawl.core.Settings;
 import com.megacrit.cardcrawl.dungeons.AbstractDungeon;
 import com.megacrit.cardcrawl.helpers.FontHelper;
 import com.megacrit.cardcrawl.helpers.ImageMaster;
+import com.megacrit.cardcrawl.neow.NeowRoom;
+import com.megacrit.cardcrawl.random.Random;
+import com.megacrit.cardcrawl.rooms.AbstractRoom;
+import com.megacrit.cardcrawl.rooms.EventRoom;
+import com.megacrit.cardcrawl.rooms.VictoryRoom;
 import communicationmod.patches.CInputActionPatch;
 import communicationmod.patches.InputActionPatch;
 import org.apache.logging.log4j.LogManager;
@@ -31,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 import static java.lang.Thread.sleep;
 
 @SpireInitializer
-public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSubscriber, PostDungeonUpdateSubscriber, PreUpdateSubscriber {
+public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSubscriber, PostDungeonUpdateSubscriber, PreUpdateSubscriber, PreStartGameSubscriber {
 
     private static Process listener;
     private static StringBuilder inputBuffer = new StringBuilder();
@@ -44,9 +47,10 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
     private static BlockingQueue<String> readQueue;
     private static final String MODNAME = "Communication Mod";
     private static final String AUTHOR = "Forgotten Arbiter";
-    private static final String DESCRIPTION = "This mod communicates with an external program to play Slay the Spire.";
+    private static final String DESCRIPTION = "This mod communicates with an external program to play Slay the Spire. This branch also has tools for TASing.";
     public static boolean mustSendGameState = false;
-    private static int frameCount = 0;
+    public static int frameCount = 0;
+    public static Random mapPositionRng;
 
     private static SpireConfig communicationConfig;
     private static final String COMMAND_OPTION = "command";
@@ -77,8 +81,8 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
                 communicationConfig.save();
             }
             communicationConfig.save();
-            command_log_file = new FileWriter("tas_heart_commands.log");
-            command_file = new BufferedReader(new FileReader(new File("tas_heart_commands.txt")));
+            command_log_file = new FileWriter("tas_silent_commands.log");
+            command_file = new BufferedReader(new FileReader(new File("tas_silent_commands.txt")));
         } catch (IOException e) {
             e.printStackTrace();
             command_file = new BufferedReader(new StringReader(""));
@@ -100,7 +104,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
             readThread.interrupt();
         }
         String file_command;
-        if (GameStateListener.isWaitingForCommand() && (file_command = getNextCommand()) != null) {
+        if (GameStateListener.isWaitingForCommand() && !doneWithFile && (file_command = getNextCommand()) != null) {
             try {
                 boolean stateChanged = CommandExecutor.executeCommand(file_command);
                 logCommand(file_command);
@@ -138,7 +142,11 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
         try {
             String line = command_file.readLine();
             doneWithFile = !command_file.ready();
-            return line;
+            if (line != null && line.startsWith("#")) {
+                return getNextCommand();
+            } else {
+                return line;
+            }
         } catch (IOException e) {
             e.printStackTrace();
             return null;
@@ -155,6 +163,10 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
         }
     }
 
+    public void receivePreStartGame() {
+        mapPositionRng = new Random(0L);
+    }
+
     public void receivePostInitialize() {
         setUpOptionsMenu();
     }
@@ -162,13 +174,16 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
     public void receivePostUpdate() {
         if (Gdx.input.isKeyJustPressed(Input.Keys.END)) {
             frameCount = 0;
+            doneWithFile = false;
             try {
                 command_file.close();
-                command_file = new BufferedReader(new FileReader(new File("tas_heart_commands.txt")));
+                command_file = new BufferedReader(new FileReader(new File("tas_silent_commands.txt")));
             } catch (IOException e) {
                 e.printStackTrace();
                 command_file = new BufferedReader(new StringReader(""));
             }
+        } else if (Gdx.input.isKeyJustPressed(Input.Keys.HOME)) {
+            doneWithFile = true;
         }
         if (GameStateListener.checkForMenuStateChange()) {
             if (!mustSendGameState && doneWithFile) {
@@ -182,7 +197,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
         InputActionPatch.doKeypress = false;
         CInputActionPatch.doKeypress = false;
         frameCount += 1;
-        logger.info(frameCount);
+//        logger.info(frameCount);
     }
 
     public void receivePostDungeonUpdate() {
@@ -391,7 +406,8 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
     }
 
     public static float getConstantDelta() {
-        return 1.0f / Settings.MAX_FPS;
+//        return 1.0f / Settings.MAX_FPS;
+        return 1.0f / 240.0f;
     }
 
 }
