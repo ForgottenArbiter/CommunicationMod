@@ -12,6 +12,7 @@ public class GameStateListener {
     private static AbstractDungeon.CurrentScreen previousScreen = null;
     private static boolean previousScreenUp = false;
     private static AbstractRoom.RoomPhase previousPhase = null;
+    private static boolean previousGridSelectConfirmUp = false;
     private static int previousGold = 99;
     private static boolean externalChange = false;
     private static boolean myTurn = false;
@@ -81,6 +82,7 @@ public class GameStateListener {
         previousScreen = null;
         previousScreenUp = false;
         previousPhase = null;
+        previousGridSelectConfirmUp = false;
         previousGold = 99;
         externalChange = false;
         myTurn = false;
@@ -173,6 +175,13 @@ public class GameStateListener {
                 && AbstractDungeon.actionManager.cardQueue.isEmpty()) {
             return true;
         }
+        // In a grid select screen, if a confirm screen comes up or goes away, it doesn't change any other state.
+        if (newScreen == AbstractDungeon.CurrentScreen.GRID) {
+            boolean newGridSelectConfirmUp = AbstractDungeon.gridSelectScreen.confirmScreenUp;
+            if (previousScreen == AbstractDungeon.CurrentScreen.GRID && newGridSelectConfirmUp != previousGridSelectConfirmUp) {
+                return true;
+            }
+        }
         // Sometimes, we need to register an external change in combat while an action is resolving which brings
         // the screen up. Because the screen did not change, this is not covered by other cases.
         if (externalChange && inCombat && newScreenUp) {
@@ -224,6 +233,7 @@ public class GameStateListener {
                 previousScreen = AbstractDungeon.screen;
                 previousScreenUp = AbstractDungeon.isScreenUp;
                 previousGold = AbstractDungeon.player.gold;
+                previousGridSelectConfirmUp = AbstractDungeon.gridSelectScreen.confirmScreenUp;
                 timeout = 0;
             }
         } else {
