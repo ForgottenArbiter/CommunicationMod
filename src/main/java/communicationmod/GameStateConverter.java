@@ -85,6 +85,7 @@ public class GameStateConverter {
      * - "deck" (list): A list of the cards in the player's deck
      * - "potions" (list): A list of the player's potions (empty slots are PotionSlots)
      * - "map" (list): The current dungeon map
+     * - "keys" (object): Contains booleans for each of the three keys to reach Act 4
      * Sometimes present:
      * - "current_action" (list): The class name of the action in the action manager queue, if not empty
      * - "combat_state" (list): The state of the combat (draw pile, monsters, etc.)
@@ -142,6 +143,13 @@ public class GameStateConverter {
             state.put("combat_state", getCombatState());
         }
         state.put("screen_state", getScreenState());
+
+        HashMap<String, Boolean> keys = new HashMap<>();
+        keys.put("ruby", Settings.hasRubyKey);
+        keys.put("emerald", Settings.hasEmeraldKey);
+        keys.put("sapphire", Settings.hasSapphireKey);
+        state.put("keys", keys);
+
         return state;
     }
 
