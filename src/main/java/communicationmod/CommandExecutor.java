@@ -352,7 +352,7 @@ public class CommandExecutor {
         }
         if(tokens.length >= 4) {
             String seedString = tokens[3].toUpperCase();
-            if(!seedString.matches("^[A-Z0-9]+$")) {
+            if(!seedString.matches("^-?[A-Z0-9]+$")) {
                 throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.INVALID_ARGUMENT, seedString);
             }
             seedSet = true;

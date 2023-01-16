@@ -698,6 +698,7 @@ public class GameStateConverter {
             jsonMonster.put("second_last_move_id", monster.moveHistory.get(monster.moveHistory.size() - 3));
         }
         jsonMonster.put("half_dead", monster.halfDead);
+        jsonMonster.put("is_escaping", monster.isEscaping);
         jsonMonster.put("is_gone", monster.isDeadOrEscaped());
         jsonMonster.put("block", monster.currentBlock);
         jsonMonster.put("powers", convertCreaturePowersToJson(monster));
