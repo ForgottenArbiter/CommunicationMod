@@ -356,7 +356,7 @@ public class CommandExecutor {
             if(!seedString.matches("^-?[A-Z0-9]+$")) {
                 throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.INVALID_ARGUMENT, seedString);
             }
-            if (seedString.matches("^-?[0-9]+$]")) {
+            if (seedString.matches("^-?[0-9]+$")) {
                 numerical = true;
             }
             seedSet = true;
