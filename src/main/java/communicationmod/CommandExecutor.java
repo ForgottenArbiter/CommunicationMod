@@ -352,11 +352,19 @@ public class CommandExecutor {
         }
         if(tokens.length >= 4) {
             String seedString = tokens[3].toUpperCase();
+            boolean numerical = false;
             if(!seedString.matches("^-?[A-Z0-9]+$")) {
                 throw new InvalidCommandException(tokens, InvalidCommandException.InvalidCommandFormat.INVALID_ARGUMENT, seedString);
             }
+            if (seedString.matches("^-?[0-9]+$]")) {
+                numerical = true;
+            }
             seedSet = true;
-            seed = SeedHelper.getLong(seedString);
+            if (numerical) {
+                seed = Long.parseLong(seedString);
+            } else {
+                seed = SeedHelper.getLong(seedString);
+            }
             boolean isTrialSeed = TrialHelper.isTrialSeed(seedString);
             if (isTrialSeed) {
                 Settings.specialSeed = seed;
