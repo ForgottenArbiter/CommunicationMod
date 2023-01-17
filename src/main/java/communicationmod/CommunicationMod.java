@@ -26,6 +26,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import static basemod.devcommands.ConsoleCommand.addCommand;
+
 @SpireInitializer
 public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSubscriber, PostDungeonUpdateSubscriber, PreUpdateSubscriber, OnStateChangeSubscriber {
 
@@ -37,6 +39,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
     private static BlockingQueue<String> writeQueue;
     private static Thread readThread;
     private static BlockingQueue<String> readQueue;
+    public static boolean paused;
     private static final String MODNAME = "Communication Mod";
     private static final String AUTHOR = "Forgotten Arbiter";
     private static final String DESCRIPTION = "This mod communicates with an external program to play Slay the Spire.";
@@ -81,6 +84,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
 
     public static void initialize() {
         CommunicationMod mod = new CommunicationMod();
+        addCommand("comms", CommsCommand.class);
     }
 
     public void receivePreUpdate() {
@@ -89,7 +93,7 @@ public class CommunicationMod implements PostInitializeSubscriber, PostUpdateSub
             writeThread.interrupt();
             readThread.interrupt();
         }
-        if(messageAvailable()) {
+        if(messageAvailable() && !paused) {
             try {
                 boolean stateChanged = CommandExecutor.executeCommand(readMessage());
                 if(stateChanged) {
