@@ -669,27 +669,25 @@ public class GameStateConverter {
         jsonMonster.put("name", monster.name);
         jsonMonster.put("current_hp", monster.currentHealth);
         jsonMonster.put("max_hp", monster.maxHealth);
-        if (AbstractDungeon.player.hasRelic(RunicDome.ID)) {
-            jsonMonster.put("intent", AbstractMonster.Intent.NONE);
-        } else {
-            jsonMonster.put("intent", monster.intent.name());
-            EnemyMoveInfo moveInfo = (EnemyMoveInfo)ReflectionHacks.getPrivate(monster, AbstractMonster.class, "move");
-            if (moveInfo != null) {
-                jsonMonster.put("move_id", moveInfo.nextMove);
-                jsonMonster.put("move_base_damage", moveInfo.baseDamage);
-                int intentDmg = (int)ReflectionHacks.getPrivate(monster, AbstractMonster.class, "intentDmg");
-                if (moveInfo.baseDamage > 0) {
-                    jsonMonster.put("move_adjusted_damage", intentDmg);
-                } else {
-                    jsonMonster.put("move_adjusted_damage", moveInfo.baseDamage);
-                }
-                int move_hits = moveInfo.multiplier;
-                // If isMultiDamage is not set, the multiplier is probably 0, but there is really 1 attack.
-                if (!moveInfo.isMultiDamage) {
-                    move_hits = 1;
-                }
-                jsonMonster.put("move_hits", move_hits);
+        // send over full intent information
+        // the user must exclude this if runic dome is present if they wish to avoid "cheating"
+        jsonMonster.put("intent", monster.intent.name());
+        EnemyMoveInfo moveInfo = (EnemyMoveInfo)ReflectionHacks.getPrivate(monster, AbstractMonster.class, "move");
+        if (moveInfo != null) {
+            jsonMonster.put("move_id", moveInfo.nextMove);
+            jsonMonster.put("move_base_damage", moveInfo.baseDamage);
+            int intentDmg = (int)ReflectionHacks.getPrivate(monster, AbstractMonster.class, "intentDmg");
+            if (moveInfo.baseDamage > 0) {
+                jsonMonster.put("move_adjusted_damage", intentDmg);
+            } else {
+                jsonMonster.put("move_adjusted_damage", moveInfo.baseDamage);
             }
+            int move_hits = moveInfo.multiplier;
+            // If isMultiDamage is not set, the multiplier is probably 0, but there is really 1 attack.
+            if (!moveInfo.isMultiDamage) {
+                move_hits = 1;
+            }
+            jsonMonster.put("move_hits", move_hits);
         }
         if(monster.moveHistory.size() >= 2) {
             jsonMonster.put("last_move_id", monster.moveHistory.get(monster.moveHistory.size() - 2));
