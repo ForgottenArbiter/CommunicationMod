@@ -20,6 +20,7 @@ import com.megacrit.cardcrawl.potions.PotionSlot;
 import com.megacrit.cardcrawl.random.Random;
 import com.megacrit.cardcrawl.relics.AbstractRelic;
 import com.megacrit.cardcrawl.rooms.*;
+import com.megacrit.cardcrawl.screens.DeathScreen;
 import communicationmod.patches.InputActionPatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -66,6 +67,9 @@ public class CommandExecutor {
             case "start":
                 executeStartCommand(tokens);
                 return true;
+            case "abandon":
+                executeAbandonCommand();
+                return true;
             case "state":
                 executeStateCommand();
                 return false;
@@ -107,6 +111,9 @@ public class CommandExecutor {
         }
         if (isStartCommandAvailable()) {
             availableCommands.add("start");
+        }
+        if (isAbandonCommandAvailable()) {
+            availableCommands.add("abandon");
         }
         if (isInDungeon()) {
             availableCommands.add("key");
@@ -187,6 +194,10 @@ public class CommandExecutor {
 
     public static boolean isStartCommandAvailable() {
         return !isInDungeon() && CardCrawlGame.mainMenuScreen != null;
+    }
+
+    public static boolean isAbandonCommandAvailable() {
+        return !isStartCommandAvailable();
     }
 
     private static void executeStateCommand() {
@@ -387,6 +398,12 @@ public class CommandExecutor {
         manager.setChosenCharacter(selectedClass);
         CardCrawlGame.chosenCharacter = selectedClass;
         GameStateListener.resetStateVariables();
+    }
+
+    private static void executeAbandonCommand() {
+        AbstractDungeon.closeCurrentScreen();
+        AbstractDungeon.player.isDead = true;
+        AbstractDungeon.deathScreen = new DeathScreen(AbstractDungeon.getMonsters());
     }
 
     private static void executeKeyCommand(String[] tokens) throws InvalidCommandException {
