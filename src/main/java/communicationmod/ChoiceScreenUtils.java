@@ -212,7 +212,7 @@ public class ChoiceScreenUtils {
             case CARD_REWARD:
                 return isCardRewardSkipAvailable();
             case COMBAT_REWARD:
-                return false;
+                return isCombatRewardCloseAvailable();
             case MAP:
                 return AbstractDungeon.dungeonMapScreen.dismissable;
             case BOSS_REWARD:
@@ -240,6 +240,8 @@ public class ChoiceScreenUtils {
         switch (choiceType) {
             case CARD_REWARD:
                 return "skip";
+            case COMBAT_REWARD:
+                return "skip";
             case MAP:
                 return "return";
             case BOSS_REWARD:
@@ -260,6 +262,7 @@ public class ChoiceScreenUtils {
     private static void pressCancelButton(ChoiceType choiceType) {
         switch (choiceType) {
             case CARD_REWARD:
+            case COMBAT_REWARD:
                 AbstractDungeon.closeCurrentScreen();
                 return;
             case MAP:
@@ -396,6 +399,11 @@ public class ChoiceScreenUtils {
     public static boolean isCardRewardSkipAvailable() {
         SkipCardButton skipButton = (SkipCardButton) ReflectionHacks.getPrivate(AbstractDungeon.cardRewardScreen, CardRewardScreen.class, "skipButton");
         return !((boolean) ReflectionHacks.getPrivate(skipButton, SkipCardButton.class, "isHidden"));
+    }
+
+    public static boolean isCombatRewardCloseAvailable() {
+        CancelButton cancelButton = AbstractDungeon.overlayMenu.cancelButton;
+        return !cancelButton.isHidden;
     }
 
     public static void makeCardRewardChoice(int choice) {
