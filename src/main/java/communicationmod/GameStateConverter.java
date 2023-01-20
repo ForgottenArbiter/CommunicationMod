@@ -13,6 +13,10 @@ import com.megacrit.cardcrawl.map.MapEdge;
 import com.megacrit.cardcrawl.map.MapRoomNode;
 import com.megacrit.cardcrawl.monsters.AbstractMonster;
 import com.megacrit.cardcrawl.monsters.EnemyMoveInfo;
+import com.megacrit.cardcrawl.monsters.beyond.*;
+import com.megacrit.cardcrawl.monsters.city.BookOfStabbing;
+import com.megacrit.cardcrawl.monsters.city.Champ;
+import com.megacrit.cardcrawl.monsters.exordium.Hexaghost;
 import com.megacrit.cardcrawl.neow.NeowEvent;
 import com.megacrit.cardcrawl.orbs.AbstractOrb;
 import com.megacrit.cardcrawl.potions.AbstractPotion;
@@ -677,35 +681,72 @@ public class GameStateConverter {
         jsonMonster.put("name", monster.name);
         jsonMonster.put("current_hp", monster.currentHealth);
         jsonMonster.put("max_hp", monster.maxHealth);
-        if (AbstractDungeon.player.hasRelic(RunicDome.ID)) {
-            jsonMonster.put("intent", AbstractMonster.Intent.NONE);
-        } else {
-            jsonMonster.put("intent", monster.intent.name());
-            EnemyMoveInfo moveInfo = (EnemyMoveInfo)ReflectionHacks.getPrivate(monster, AbstractMonster.class, "move");
-            if (moveInfo != null) {
-                jsonMonster.put("move_id", moveInfo.nextMove);
-                jsonMonster.put("move_base_damage", moveInfo.baseDamage);
-                int intentDmg = (int)ReflectionHacks.getPrivate(monster, AbstractMonster.class, "intentDmg");
-                if (moveInfo.baseDamage > 0) {
-                    jsonMonster.put("move_adjusted_damage", intentDmg);
-                } else {
-                    jsonMonster.put("move_adjusted_damage", moveInfo.baseDamage);
-                }
-                int move_hits = moveInfo.multiplier;
-                // If isMultiDamage is not set, the multiplier is probably 0, but there is really 1 attack.
-                if (!moveInfo.isMultiDamage) {
-                    move_hits = 1;
-                }
-                jsonMonster.put("move_hits", move_hits);
+        // send over full intent information
+        // the user must exclude this if runic dome is present if they wish to avoid "cheating"
+        jsonMonster.put("intent", monster.intent.name());
+        EnemyMoveInfo moveInfo = (EnemyMoveInfo)ReflectionHacks.getPrivate(monster, AbstractMonster.class, "move");
+        if (moveInfo != null) {
+            jsonMonster.put("move_id", moveInfo.nextMove);
+            jsonMonster.put("move_base_damage", moveInfo.baseDamage);
+            int intentDmg = (int)ReflectionHacks.getPrivate(monster, AbstractMonster.class, "intentDmg");
+            if (moveInfo.baseDamage > 0) {
+                jsonMonster.put("move_adjusted_damage", intentDmg);
+            } else {
+                jsonMonster.put("move_adjusted_damage", moveInfo.baseDamage);
             }
+            int move_hits = moveInfo.multiplier;
+            // If isMultiDamage is not set, the multiplier is probably 0, but there is really 1 attack.
+            if (!moveInfo.isMultiDamage) {
+                move_hits = 1;
+            }
+            jsonMonster.put("move_hits", move_hits);
         }
-        if(monster.moveHistory.size() >= 2) {
+        if (monster.moveHistory.size() >= 2) {
             jsonMonster.put("last_move_id", monster.moveHistory.get(monster.moveHistory.size() - 2));
         }
-        if(monster.moveHistory.size() >= 3) {
+        if (monster.moveHistory.size() >= 3) {
             jsonMonster.put("second_last_move_id", monster.moveHistory.get(monster.moveHistory.size() - 3));
         }
+
+        // some monster-specific information that isn't a part of powers
+        String[] miscIntFieldNames = {
+                "nipDmg", "thornsCount", "stabCount", "biteDmg", "currentCharge"
+        };
+        // nipDmg is the darkling nip attack damage amount (only available to the player after the first time the darkling rolls nip)
+        // thornsCount is the number of times a spiker has buffed its thorns amount
+        // stabCount is the number of stabs the book of stabbing does in its multi-attack
+        // biteDmg is the louse bite attack damage amount (only available to the player after the first time the louse rolls bite)
+        // currentCharge is the amount of turns the gremlin wizard has charged up
+        Object misc;
+        for (String fieldName : miscIntFieldNames) {
+            misc = getFieldIfExists(monster, fieldName);
+            if (misc != null) {
+                jsonMonster.put("miscInt", (int)misc);
+                break;
+            }
+        }
+        String[] miscBoolFieldNames = {
+                "thresholdReached", "usedHaste", "form1", "usedMegaDebuff", "usedStasis"
+        };
+        // thresholdReached is if champ has gone below half HP - this is probably redundant
+        // usedHaste is if time eater has used haste (the heal move)
+        // form1 is if awakened one is in its first form still
+        // usedMegaDebuff is if writhing mass has used implant (the curse move)
+        // usedStasis is if the bronze orb has used stasis yet
+        for (String fieldName : miscBoolFieldNames) {
+            misc = getFieldIfExists(monster, fieldName);
+            if (misc != null) {
+                jsonMonster.put("miscBool", (boolean)misc);
+                break;
+            }
+        }
+        if (monster instanceof Hexaghost) {
+            jsonMonster.put("active_orbs", getFieldIfExists(monster, "orbActiveCount"));
+            jsonMonster.put("miscInt", monster.damage.get(2).base);
+        }
+
         jsonMonster.put("half_dead", monster.halfDead);
+        jsonMonster.put("is_escaping", monster.isEscaping);
         jsonMonster.put("is_gone", monster.isDeadOrEscaped());
         jsonMonster.put("block", monster.currentBlock);
         jsonMonster.put("powers", convertCreaturePowersToJson(monster));
@@ -791,13 +832,14 @@ public class GameStateConverter {
                 json_power.put("card", convertCardToJson((AbstractCard)card));
             }
             String[] miscFieldNames = {
-                    "basePower", "maxAmt", "storedAmount", "hpLoss", "cardsDoubledThisTurn"
+                    "basePower", "maxAmt", "storedAmount", "hpLoss", "cardsDoubledThisTurn", "energyGainAmount"
             };
             // basePower gives the base power for Malleable
             // maxAmt gives the max amount of damage per turn for Invincible
             // storedAmount gives the number of stacks per turn for Flight
             // hpLoss gives the amount of HP lost per turn with Combust
             // cardsDoubledThisTurn gives the number of cards already doubled with Echo Form
+            // energyGainedAmount gives the amount of energy per turn given by Deva Form
             Object misc = null;
             for (String fieldName : miscFieldNames) {
                 misc = getFieldIfExists(power, fieldName);
